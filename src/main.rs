@@ -46,8 +46,8 @@ async fn main() -> Result<(), std::io::Error> {
 
     let app = Route::new()
         .at("/", get(index))
+        .at("/apps", get(apps))
         .at("/login", get(login))
-        .at("/hello/:name", get(hello))
         .at(redirect_path, get(login_authorized))
         .with(Tracing)
         .with(CookieSession::new(CookieConfig::default().secure(false)));
@@ -69,14 +69,32 @@ struct AuthRequest {
 }
 
 #[handler]
-async fn hello(Path(name): Path<String>, session: &Session) -> Redirect {
-    session.set("name", &name);
-    Redirect::permanent("/")
+async fn apps(session: &Session) -> String {
+    let client = reqwest::Client::new();
+
+    let user = session.get::<User>("user").unwrap();
+    let refresh_token = session.get::<String>("refresh_token").unwrap();
+
+    let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
+
+    let apps = client
+        .get(format!("{authentik_url}/api/v3/core/applications"))
+        .bearer_auth(refresh_token.clone())
+        .send()
+        .await
+        .expect("Request failed")
+        .json::<AppResponse>()
+        .await
+        .expect("JSON failed");
+
+    format!(
+        "Welcome to the protected area :)\nHere's your info:\n{:#?}\n{:#?}",
+        user, apps
+    )
 }
 
 #[handler]
 async fn index(session: &Session) -> String {
-    println!("fn root");
     match session.get::<User>("user") {
         Some(user) => format!("Thou art {}", user.name),
         None => "Do I know you?".to_string(),
@@ -144,4 +162,37 @@ struct User {
     preferred_username: String,
     groups: Option<Vec<String>>,
     sub: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct AppResponse {
+    pagination: Option<Pagination>,
+    results: Vec<Application>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct Pagination {
+    next: i64,
+    previous: i64,
+    count: i64,
+    current: i64,
+    total_pages: i64,
+    start_index: i64,
+    end_index: i64,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct Application {
+    pk: String,
+    name: String,
+    slug: String,
+    provider: Option<i64>,
+    launch_url: Option<String>,
+    open_in_new_tab: bool,
+    meta_launch_url: String,
+    meta_icon: Option<String>,
+    meta_description: String,
+    meta_publisher: String,
+    policy_engine_mode: String,
+    group: String,
 }
