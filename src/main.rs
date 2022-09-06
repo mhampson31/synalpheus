@@ -48,8 +48,8 @@ async fn main() -> Result<(), std::io::Error> {
 
     let app = Route::new()
         .at("/", get(index))
-        .at("/apps", get(apps))
         .at("/login", get(login))
+        .at("/logout", get(logout))
         .at(redirect_path, get(login_authorized))
         .with(Tracing)
         .with(CookieSession::new(CookieConfig::default().secure(false)));
@@ -65,41 +65,36 @@ async fn main() -> Result<(), std::io::Error> {
 }
 
 #[handler]
-async fn apps(session: &Session) -> impl IntoResponse {
-    let client = reqwest::Client::new();
-
-    let user = session.get::<User>("user").unwrap();
-    let refresh_token = session.get::<String>("refresh_token").unwrap();
-
-    let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
-
-    let apps = client
-        .get(format!("{authentik_url}/api/v3/core/applications"))
-        .bearer_auth(refresh_token.clone())
-        .send()
-        .await
-        .expect("Request failed")
-        .json::<AppResponse>()
-        .await
-        .expect("JSON failed");
-
-    format!(
-        "Welcome to the protected area :)\nHere's your info:\n{:#?}\n{:#?}",
-        user, apps
-    )
-}
-
-#[handler]
 async fn index(session: &Session) -> impl IntoResponse {
     match session.get::<User>("user") {
-        Some(user) => format!("Thou art {}", user.name),
+        Some(user) => {
+            let client = reqwest::Client::new();
+
+            let refresh_token = session.get::<String>("refresh_token").unwrap();
+
+            let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
+
+            let apps = client
+                .get(format!("{authentik_url}/api/v3/core/applications"))
+                .bearer_auth(refresh_token.clone())
+                .send()
+                .await
+                .expect("Request failed")
+                .json::<AppResponse>()
+                .await
+                .expect("JSON failed");
+
+            format!(
+                "Welcome to the protected area :)\nHere's your info:\n{:#?}\n{:#?}",
+                user, apps
+            )
+        }
         None => "Do I know you?".to_string(),
     }
 }
 
 #[handler]
 async fn login() -> Redirect {
-    println!("fn login");
     let client = oauth_client();
     let (auth_url, _csrf_token) = client
         .authorize_url(CsrfToken::new_random)
@@ -146,6 +141,13 @@ async fn login_authorized(
 
     session.set("user", user_data);
     session.set("refresh_token", refresh_token);
+
+    Redirect::permanent("/")
+}
+
+#[handler]
+async fn logout(session: &Session) -> impl IntoResponse {
+    session.purge();
 
     Redirect::permanent("/")
 }
