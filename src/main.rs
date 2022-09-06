@@ -22,6 +22,8 @@ fn oauth_client() -> BasicClient {
     let token_url = format!("{authentik_url}/application/o/token/");
     let redirect_url = env::var("REDIRECT_URL").expect("Missing REDIRECT_URL!");
 
+    println!("{}", &redirect_url);
+
     BasicClient::new(
         ClientId::new(client_id),
         Some(ClientSecret::new(client_secret)),
@@ -75,8 +77,8 @@ async fn hello(Path(name): Path<String>, session: &Session) -> Redirect {
 #[handler]
 async fn root(session: &Session) -> String {
     println!("fn root");
-    match session.get::<String>("name") {
-        Some(name) => format!("Thou art {name}"),
+    match session.get::<User>("user") {
+        Some(user) => format!("Thou art {}", user.name),
         None => "Do I know you?".to_string(),
     }
 }
@@ -93,6 +95,8 @@ async fn login() -> Redirect {
         .add_scope(Scope::new("goauthentik.io/api".to_string()))
         .url();
 
+    println!("{:#?}", &auth_url);
+
     // Redirect to Authentik
     Redirect::permanent(auth_url)
 }
@@ -100,7 +104,7 @@ async fn login() -> Redirect {
 #[handler]
 async fn login_authorized(
     session: &Session,
-    Query(AuthRequest { code, state }): Query<AuthRequest>,
+    Query(AuthRequest { code, state: _ }): Query<AuthRequest>,
 ) -> Redirect {
     let client = oauth_client();
     let token = client
@@ -112,10 +116,10 @@ async fn login_authorized(
     let client = reqwest::Client::new();
     let refresh_token = token.refresh_token().unwrap().secret();
 
-    let ak_root = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
+    let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
 
     let user_data: User = client
-        .get(format!("{ak_root}/application/o/userinfo/"))
+        .get(format!("{authentik_url}/application/o/userinfo/"))
         .bearer_auth(token.access_token().secret())
         .send()
         .await
