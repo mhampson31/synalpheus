@@ -11,4 +11,8 @@ Cargo.lock
 **/*.rs.bk
 =======
 /target
+<<<<<<< HEAD
 >>>>>>> 980a371 (Basic server + session)
+=======
+.env
+>>>>>>> 4f069cb (Initial oauth, refactor .env)
