@@ -45,7 +45,7 @@ async fn main() -> Result<(), std::io::Error> {
     let redirect_path = env::var("REDIRECT_PATH").expect("Missing REDIRECT_PATH!");
 
     let app = Route::new()
-        .at("/", get(root))
+        .at("/", get(index))
         .at("/login", get(login))
         .at("/hello/:name", get(hello))
         .at(redirect_path, get(login_authorized))
@@ -75,7 +75,7 @@ async fn hello(Path(name): Path<String>, session: &Session) -> Redirect {
 }
 
 #[handler]
-async fn root(session: &Session) -> String {
+async fn index(session: &Session) -> String {
     println!("fn root");
     match session.get::<User>("user") {
         Some(user) => format!("Thou art {}", user.name),
