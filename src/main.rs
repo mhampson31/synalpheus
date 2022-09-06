@@ -7,8 +7,8 @@ use poem::{
     listener::TcpListener,
     middleware::Tracing,
     session::{CookieConfig, CookieSession, Session},
-    web::{Path, Query, Redirect},
-    EndpointExt, Route, Server,
+    web::{Query, Redirect},
+    EndpointExt, IntoResponse, Route, Server,
 };
 use serde::{Deserialize, Serialize};
 use std::env;
@@ -18,9 +18,11 @@ fn oauth_client() -> BasicClient {
 
     let client_id = env::var("CLIENT_ID").expect("Missing CLIENT_ID!");
     let client_secret = env::var("CLIENT_SECRET").expect("Missing CLIENT_SECRET!");
+    let redirect_url = env::var("REDIRECT_URL").expect("Missing REDIRECT_URL!");
+
+    /* These do not appear to be editable, so construct them here rather than in the .env */
     let authorize_url = format!("{authentik_url}/application/o/authorize/");
     let token_url = format!("{authentik_url}/application/o/token/");
-    let redirect_url = env::var("REDIRECT_URL").expect("Missing REDIRECT_URL!");
 
     println!("{}", &redirect_url);
 
@@ -62,14 +64,8 @@ async fn main() -> Result<(), std::io::Error> {
         .await
 }
 
-#[derive(Debug, Deserialize)]
-struct AuthRequest {
-    code: String,
-    state: String,
-}
-
 #[handler]
-async fn apps(session: &Session) -> String {
+async fn apps(session: &Session) -> impl IntoResponse {
     let client = reqwest::Client::new();
 
     let user = session.get::<User>("user").unwrap();
@@ -94,7 +90,7 @@ async fn apps(session: &Session) -> String {
 }
 
 #[handler]
-async fn index(session: &Session) -> String {
+async fn index(session: &Session) -> impl IntoResponse {
     match session.get::<User>("user") {
         Some(user) => format!("Thou art {}", user.name),
         None => "Do I know you?".to_string(),
@@ -152,6 +148,12 @@ async fn login_authorized(
     session.set("refresh_token", refresh_token);
 
     Redirect::permanent("/")
+}
+
+#[derive(Debug, Deserialize)]
+struct AuthRequest {
+    code: String,
+    state: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
