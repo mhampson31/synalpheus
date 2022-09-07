@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Index{% endblock %}
+
+{% block head %}
+<style>
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Index</h1>
+
+<div>Hello, {{ user.name }}</div>
+
+<ul>
+    {% for app in apps %}
+    <li>{{ app.name }}</li>
+    {% endfor %}
+</ul>
+
+{% endblock %}

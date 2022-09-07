@@ -1,3 +1,4 @@
+use askama::Template;
 use oauth2::{
     basic::BasicClient, reqwest::async_http_client, AuthUrl, AuthorizationCode, ClientId,
     ClientSecret, CsrfToken, RedirectUrl, Scope, TokenResponse, TokenUrl,
@@ -7,11 +8,11 @@ use poem::{
     listener::TcpListener,
     middleware::Tracing,
     session::{CookieConfig, CookieSession, Session},
-    web::{Query, Redirect},
+    web::{Html, Query, Redirect},
     EndpointExt, IntoResponse, Route, Server,
 };
 use serde::{Deserialize, Serialize};
-use std::env;
+use std::{env, ops::Index};
 
 fn oauth_client() -> BasicClient {
     let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
@@ -66,7 +67,7 @@ async fn main() -> Result<(), std::io::Error> {
 
 #[handler]
 async fn index(session: &Session) -> impl IntoResponse {
-    match session.get::<User>("user") {
+    let response = match session.get::<User>("user") {
         Some(user) => {
             let client = reqwest::Client::new();
 
@@ -84,13 +85,16 @@ async fn index(session: &Session) -> impl IntoResponse {
                 .await
                 .expect("JSON failed");
 
-            format!(
-                "Welcome to the protected area :)\nHere's your info:\n{:#?}\n{:#?}",
-                user, apps
-            )
+            UserTemplate {
+                user: &user,
+                apps: &apps.results,
+            }
+            .render()
+            .unwrap()
         }
-        None => "Do I know you?".to_string(),
-    }
+        None => AnonTemplate {}.render().unwrap(),
+    };
+    Html(response).into_response()
 }
 
 #[handler]
@@ -151,6 +155,17 @@ async fn logout(session: &Session) -> impl IntoResponse {
 
     Redirect::permanent("/")
 }
+
+#[derive(Template)]
+#[template(path = "index.html")]
+struct UserTemplate<'a> {
+    user: &'a User,
+    apps: &'a Vec<Application>,
+}
+
+#[derive(Template)]
+#[template(path = "anon.html")]
+struct AnonTemplate {}
 
 #[derive(Debug, Deserialize)]
 struct AuthRequest {
