@@ -73,7 +73,7 @@ async fn index(session: &Session) -> impl IntoResponse {
 
             let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
 
-            let apps = client
+            let mut apps = client
                 .get(format!("{authentik_url}/api/v3/core/applications"))
                 .bearer_auth(refresh_token.clone())
                 .send()
@@ -82,6 +82,8 @@ async fn index(session: &Session) -> impl IntoResponse {
                 .json::<AppResponse>()
                 .await
                 .expect("JSON failed");
+
+            apps.results.sort_by_key(|app| app.group.clone());
 
             UserTemplate {
                 user: &user,
@@ -105,8 +107,6 @@ async fn login() -> Redirect {
         .add_scope(Scope::new("email".to_string()))
         .add_scope(Scope::new("goauthentik.io/api".to_string()))
         .url();
-
-    println!("{:#?}", &auth_url);
 
     // Redirect to Authentik
     Redirect::permanent(auth_url)
@@ -198,12 +198,14 @@ struct Pagination {
     end_index: i64,
 }
 
+/* We probably don't need all these fields */
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Application {
     pk: String,
     name: String,
     slug: String,
-    provider: Option<i64>,
+    #[serde(deserialize_with = "deserde_null_field")]
+    provider: i64,
     #[serde(deserialize_with = "deserde_null_field")]
     launch_url: String,
     open_in_new_tab: bool,
