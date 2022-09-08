@@ -21,11 +21,9 @@ fn oauth_client() -> BasicClient {
     let client_secret = env::var("CLIENT_SECRET").expect("Missing CLIENT_SECRET!");
     let redirect_url = env::var("REDIRECT_URL").expect("Missing REDIRECT_URL!");
 
-    /* These do not appear to be editable, so construct them here rather than in the .env */
+    /* These do not appear to be editable, so we construct them here rather than in the .env */
     let authorize_url = format!("{authentik_url}/application/o/authorize/");
     let token_url = format!("{authentik_url}/application/o/token/");
-
-    println!("{}", &redirect_url);
 
     BasicClient::new(
         ClientId::new(client_id),
@@ -230,7 +228,8 @@ where
 }
 
 /* Not only is the meta_icon field nullable, but it's also a relative path on Authentik's domain.
- * Here we handle null values and also convert it to an absolute path */
+ * Here we handle null values and also convert it to an absolute path.
+ * Fortunately we know this field is always going to be a string */
 fn deserde_icon_url<'de, D>(de: D) -> Result<String, D::Error>
 where
     D: Deserializer<'de>,
@@ -238,7 +237,7 @@ where
     let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
 
     let url = match Option::<String>::deserialize(de)? {
-        Some(key) => format!("{authentik_url}/{key}"),
+        Some(key) => format!("{authentik_url}{key}"),
         None => String::default(),
     };
 
