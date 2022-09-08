@@ -11,8 +11,8 @@ use poem::{
     web::{Html, Query, Redirect},
     EndpointExt, IntoResponse, Route, Server,
 };
-use serde::{Deserialize, Serialize};
-use std::{env, ops::Index};
+use serde::{Deserialize, Deserializer, Serialize};
+use std::env;
 
 fn oauth_client() -> BasicClient {
     let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
@@ -206,12 +206,41 @@ struct Application {
     name: String,
     slug: String,
     provider: Option<i64>,
-    launch_url: Option<String>,
+    #[serde(deserialize_with = "deserde_null_field")]
+    launch_url: String,
     open_in_new_tab: bool,
     meta_launch_url: String,
-    meta_icon: Option<String>,
+    #[serde(deserialize_with = "deserde_icon_url")]
+    meta_icon: String,
     meta_description: String,
     meta_publisher: String,
     policy_engine_mode: String,
     group: String,
+}
+
+/* Some fields are optional in Authentik, and are present in the API response as nulls.
+ * When that happens, we have to get the default */
+fn deserde_null_field<'de, D, T>(de: D) -> Result<T, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Default + Deserialize<'de>,
+{
+    let key = Option::<T>::deserialize(de)?;
+    Ok(key.unwrap_or_default())
+}
+
+/* Not only is the meta_icon field nullable, but it's also a relative path on Authentik's domain.
+ * Here we handle null values and also convert it to an absolute path */
+fn deserde_icon_url<'de, D>(de: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
+
+    let url = match Option::<String>::deserialize(de)? {
+        Some(key) => format!("{authentik_url}/{key}"),
+        None => String::default(),
+    };
+
+    Ok(url)
 }

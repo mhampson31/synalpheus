@@ -3,8 +3,6 @@
 {% block title %}Index{% endblock %}
 
 {% block head %}
-<style>
-</style>
 {% endblock %}
 
 {% block content %}
@@ -12,10 +10,22 @@
 
 <div>Hello, {{ user.name }}</div>
 
-<ul>
+<div>
     {% for app in apps %}
-    <li>{{ app.name }}</li>
+    <div class="card" style="width: 18rem;">
+        <div class="card-body">
+            <img src="{{app.meta_icon}}" class="card-img-top">
+            <h5 class="card-title">{% if app.launch_url.len() > 0 %}
+                <a href="{{ app.launch_url }}">{{ app.name }}</a>
+                {% else %}
+                {{ app.name }}
+                {% endif %}
+            </h5>
+            <p class="card-text">{{app.meta_description}}</p>
+
+        </div>
+    </div>
     {% endfor %}
-</ul>
+</div>
 
 {% endblock %}
