@@ -1,4 +1,4 @@
-use askama::Template;
+use lazy_static::lazy_static;
 use oauth2::{
     basic::BasicClient, reqwest::async_http_client, AuthUrl, AuthorizationCode, ClientId,
     ClientSecret, CsrfToken, RedirectUrl, Scope, TokenResponse, TokenUrl,
@@ -13,25 +13,20 @@ use poem::{
 };
 use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
+use tera::{Context, Tera};
 
-fn oauth_client() -> BasicClient {
-    let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
-
-    let client_id = env::var("CLIENT_ID").expect("Missing CLIENT_ID!");
-    let client_secret = env::var("CLIENT_SECRET").expect("Missing CLIENT_SECRET!");
-    let redirect_url = env::var("REDIRECT_URL").expect("Missing REDIRECT_URL!");
-
-    /* These do not appear to be editable, so we construct them here rather than in the .env */
-    let authorize_url = format!("{authentik_url}/application/o/authorize/");
-    let token_url = format!("{authentik_url}/application/o/token/");
-
-    BasicClient::new(
-        ClientId::new(client_id),
-        Some(ClientSecret::new(client_secret)),
-        AuthUrl::new(authorize_url).unwrap(),
-        Some(TokenUrl::new(token_url).unwrap()),
-    )
-    .set_redirect_uri(RedirectUrl::new(redirect_url).unwrap())
+lazy_static! {
+    pub static ref TEMPLATES: Tera = {
+        let mut tera = match Tera::new("templates/**/*") {
+            Ok(t) => t,
+            Err(e) => {
+                println!("Parsing error(s): {}", e);
+                ::std::process::exit(1);
+            }
+        };
+        tera.autoescape_on(vec![".html", ".sql"]);
+        tera
+    };
 }
 
 #[tokio::main]
@@ -65,7 +60,9 @@ async fn main() -> Result<(), std::io::Error> {
 
 #[handler]
 async fn index(session: &Session) -> impl IntoResponse {
-    let response = match session.get::<User>("user") {
+    use tera::Context;
+    let mut context = Context::new();
+    match session.get::<User>("user") {
         Some(user) => {
             let client = reqwest::Client::new();
 
@@ -85,15 +82,12 @@ async fn index(session: &Session) -> impl IntoResponse {
 
             apps.results.sort_by_key(|app| app.group.clone());
 
-            UserTemplate {
-                user: &user,
-                apps: &apps.results,
-            }
-            .render()
-            .unwrap()
+            context.insert("user", &user);
+            context.insert("apps", &apps.results);
         }
-        None => AnonTemplate {}.render().unwrap(),
+        None => (),
     };
+    let response = TEMPLATES.render("index.html", &context).unwrap();
     Html(response).into_response()
 }
 
@@ -154,16 +148,25 @@ async fn logout(session: &Session) -> impl IntoResponse {
     Redirect::permanent("/")
 }
 
-#[derive(Template)]
-#[template(path = "index.html")]
-struct UserTemplate<'a> {
-    user: &'a User,
-    apps: &'a Vec<Application>,
-}
+fn oauth_client() -> BasicClient {
+    let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
 
-#[derive(Template)]
-#[template(path = "anon.html")]
-struct AnonTemplate {}
+    let client_id = env::var("CLIENT_ID").expect("Missing CLIENT_ID!");
+    let client_secret = env::var("CLIENT_SECRET").expect("Missing CLIENT_SECRET!");
+    let redirect_url = env::var("REDIRECT_URL").expect("Missing REDIRECT_URL!");
+
+    /* These do not appear to be editable, so we construct them here rather than in the .env */
+    let authorize_url = format!("{authentik_url}/application/o/authorize/");
+    let token_url = format!("{authentik_url}/application/o/token/");
+
+    BasicClient::new(
+        ClientId::new(client_id),
+        Some(ClientSecret::new(client_secret)),
+        AuthUrl::new(authorize_url).unwrap(),
+        Some(TokenUrl::new(token_url).unwrap()),
+    )
+    .set_redirect_uri(RedirectUrl::new(redirect_url).unwrap())
+}
 
 #[derive(Debug, Deserialize)]
 struct AuthRequest {

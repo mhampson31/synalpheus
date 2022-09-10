@@ -8,14 +8,13 @@
 {% block content %}
 <h1>Index</h1>
 
-<div>Hello, {{ user.name }}</div>
-
+{% if apps %}
 <div>
     {% for app in apps %}
     <div class="card mb-2" style="width: 18rem;">
         <div class="card-body">
             <img src="{{app.meta_icon}}" class="card-img-top">
-            <h5 class="card-title">{% if app.launch_url.len() > 0 %}
+            <h5 class="card-title">{% if app.launch_url %}
                 <a href="{{ app.launch_url }}">{{ app.name }}</a>
                 {% else %}
                 {{ app.name }}
@@ -27,5 +26,6 @@
     </div>
     {% endfor %}
 </div>
+{% endif %}
 
 {% endblock %}
