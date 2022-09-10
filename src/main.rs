@@ -219,7 +219,7 @@ struct Application {
 }
 
 /* Some fields are optional in Authentik, and are present in the API response as nulls.
- * When that happens, we have to get the default */
+ * When that happens, we have to change the null to an empty string */
 fn deserde_null_field<'de, D, T>(de: D) -> Result<T, D::Error>
 where
     D: Deserializer<'de>,
