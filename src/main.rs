@@ -7,10 +7,11 @@ use poem::{
     get, handler,
     listener::TcpListener,
     middleware::Tracing,
-    session::{CookieConfig, CookieSession, Session},
+    session::{CookieConfig, RedisStorage, ServerSession, Session},
     web::{Html, Query, Redirect},
     EndpointExt, IntoResponse, Route, Server,
 };
+use redis::aio::ConnectionManager;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
 use tera::{Context, Tera};
@@ -38,6 +39,10 @@ async fn main() -> Result<(), std::io::Error> {
 
     dotenv::dotenv().ok();
 
+    let redis_url = env::var("REDIS_URL").expect("Missing REDIS_URL!");
+
+    let redis = redis::Client::open(format!("redis://{redis_url}/")).unwrap();
+
     let redirect_path = env::var("REDIRECT_PATH").expect("Missing REDIRECT_PATH!");
 
     let app = Route::new()
@@ -46,7 +51,11 @@ async fn main() -> Result<(), std::io::Error> {
         .at("/logout", get(logout))
         .at(redirect_path, get(login_authorized))
         .with(Tracing)
-        .with(CookieSession::new(CookieConfig::default().secure(false)));
+        .with(ServerSession::new(
+            CookieConfig::default().secure(false),
+            RedisStorage::new(ConnectionManager::new(redis).await.unwrap()),
+        ));
+    //.with(CookieSession::new(CookieConfig::default().secure(false)));
 
     let address = dotenv::var("ADDRESS").expect("Cannot get ADDRESS");
 
@@ -60,7 +69,6 @@ async fn main() -> Result<(), std::io::Error> {
 
 #[handler]
 async fn index(session: &Session) -> impl IntoResponse {
-    use tera::Context;
     let mut context = Context::new();
     match session.get::<User>("user") {
         Some(user) => {
@@ -101,6 +109,8 @@ async fn login() -> Redirect {
         .add_scope(Scope::new("email".to_string()))
         .add_scope(Scope::new("goauthentik.io/api".to_string()))
         .url();
+
+    println!("{}", &auth_url);
 
     // Redirect to Authentik
     Redirect::permanent(auth_url)
