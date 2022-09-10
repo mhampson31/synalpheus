@@ -13,11 +13,15 @@
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            Nav
+        <div class="container text-primary">
+            {% if user %}
+            <span>Hello {{user.name}}</span>
+            {% else %}
+            <a href="/login">Login</a>
+            {% endif %}
         </div>
-
     </nav>
+
     <div id="content">
         {% block content %}{% endblock %}
     </div>
