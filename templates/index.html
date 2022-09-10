@@ -6,25 +6,43 @@
 {% endblock %}
 
 {% block content %}
-<h1>Index</h1>
 
 {% if apps %}
+<h1>Your Applications</h1>
 <div>
-    {% for app in apps %}
-    <div class="card mb-2" style="width: 18rem;">
-        <div class="card-body">
-            <img src="{{app.meta_icon}}" class="card-img-top">
-            <h5 class="card-title">{% if app.launch_url %}
-                <a href="{{ app.launch_url }}">{{ app.name }}</a>
-                {% else %}
-                {{ app.name }}
+    <div class="card-deck row row-cols-md-4">
+        {% for app in apps %}
+        <div class="card p-1 mx-2 mb-4" style="width:24rem">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5 class="card-title">{{ app.name }}</h5>
+
+                    {% if app.group %}
+                    <h6 class="card-subtitle">{{app.group}}</h6>
+                    {% endif %}
+                </div>
+
+                {% if app.meta_icon %}
+                <div class="col-md-4">
+                    <img src="{{app.meta_icon}}" class="card-img">
+                </div>
                 {% endif %}
-            </h5>
-            <p class="card-text">{{app.meta_description}}</p>
+
+            </div>
+
+            <div class="card-body">
+                <p class="card-text">{{app.meta_description}}</p>
+            </div>
+
+            {% if app.launch_url %}
+            <div class="card-footer">
+                <a href="{{ app.launch_url }}" class="stretched-link">{{ app.launch_url }}</a>
+            </div>
+            {% endif %}
 
         </div>
+        {% endfor %}
     </div>
-    {% endfor %}
 </div>
 {% endif %}
 
