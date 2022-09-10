@@ -12,8 +12,15 @@
 <div>
     <div class="card-deck row row-cols-md-4">
         {% for app in apps %}
-        <div class="card p-1 mx-2 mb-4" style="width:24rem">
-            <div class="row">
+        <div class="card mx-2 mb-4 px-0" style="width:24rem">
+            <div class="row mx-1 mt-1">
+
+                {% if app.meta_icon %}
+                <div class="col-md-4">
+                    <img src="{{app.meta_icon}}" class="card-img m-1">
+                </div>
+                {% endif %}
+
                 <div class="col-md-8">
                     <h5 class="card-title">{{ app.name }}</h5>
 
@@ -21,12 +28,6 @@
                     <h6 class="card-subtitle">{{app.group}}</h6>
                     {% endif %}
                 </div>
-
-                {% if app.meta_icon %}
-                <div class="col-md-4">
-                    <img src="{{app.meta_icon}}" class="card-img">
-                </div>
-                {% endif %}
 
             </div>
 
