@@ -5,13 +5,13 @@ use oauth2::{
 };
 use poem::{
     get, handler,
+    http::{Error, StatusCode},
     listener::TcpListener,
-    middleware::Tracing,
-    session::{CookieConfig, RedisStorage, ServerSession, Session},
-    web::{Html, Query, Redirect},
-    EndpointExt, IntoResponse, Route, Server,
+    middleware::{Csrf, Tracing},
+    session::{CookieConfig, CookieSession, Session},
+    web::{CsrfVerifier, Html, Query, Redirect},
+    EndpointExt, IntoResponse, Request, Route, Server,
 };
-use redis::aio::ConnectionManager;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
 use tera::{Context, Tera};
@@ -39,9 +39,9 @@ async fn main() -> Result<(), std::io::Error> {
 
     dotenv::dotenv().ok();
 
-    let redis_url = env::var("REDIS_URL").expect("Missing REDIS_URL!");
+    /*let redis_url = env::var("REDIS_URL").expect("Missing REDIS_URL!");
 
-    let redis = redis::Client::open(format!("redis://{redis_url}/")).unwrap();
+    let redis = redis::Client::open(format!("redis://{redis_url}/")).unwrap();*/
 
     let redirect_path = env::var("REDIRECT_PATH").expect("Missing REDIRECT_PATH!");
 
@@ -51,15 +51,10 @@ async fn main() -> Result<(), std::io::Error> {
         .at("/logout", get(logout))
         .at(redirect_path, get(login_authorized))
         .with(Tracing)
-        .with(ServerSession::new(
-            CookieConfig::default().secure(false),
-            RedisStorage::new(ConnectionManager::new(redis).await.unwrap()),
-        ));
-    //.with(CookieSession::new(CookieConfig::default().secure(false)));
+        .with(Csrf::new())
+        .with(CookieSession::new(CookieConfig::default().secure(false)));
 
     let address = dotenv::var("ADDRESS").expect("Cannot get ADDRESS");
-
-    println!("Address: {}", &address);
 
     Server::new(TcpListener::bind(address))
         .name("gonkboard")
@@ -102,6 +97,12 @@ async fn index(session: &Session) -> impl IntoResponse {
 #[handler]
 async fn login() -> Redirect {
     let client = oauth_client();
+    /*let csrf_token = req
+        .header("X-CSRF-Token")
+        .ok_or_else(|| Poem::web::Error::from_status(StatusCode::UNAUTHORIZED))?;
+    if !verifier.is_valid(&csrf_token) {
+        return  Err(Error::from_status(StatusCode::UNAUTHORIZED));
+    }*/
     let (auth_url, _csrf_token) = client
         .authorize_url(CsrfToken::new_random)
         .add_scope(Scope::new("openid".to_string()))
@@ -109,8 +110,6 @@ async fn login() -> Redirect {
         .add_scope(Scope::new("email".to_string()))
         .add_scope(Scope::new("goauthentik.io/api".to_string()))
         .url();
-
-    println!("{}", &auth_url);
 
     // Redirect to Authentik
     Redirect::permanent(auth_url)
@@ -152,9 +151,8 @@ async fn login_authorized(
 }
 
 #[handler]
-async fn logout(session: &Session) -> impl IntoResponse {
+async fn logout(session: &Session) -> Redirect {
     session.purge();
-
     Redirect::permanent("/")
 }
 
@@ -165,7 +163,7 @@ fn oauth_client() -> BasicClient {
     let client_secret = env::var("CLIENT_SECRET").expect("Missing CLIENT_SECRET!");
     let redirect_url = env::var("REDIRECT_URL").expect("Missing REDIRECT_URL!");
 
-    /* These do not appear to be editable, so we construct them here rather than in the .env */
+    /* These do not appear to be editable, so we can construct them here rather than in the .env */
     let authorize_url = format!("{authentik_url}/application/o/authorize/");
     let token_url = format!("{authentik_url}/application/o/token/");
 
