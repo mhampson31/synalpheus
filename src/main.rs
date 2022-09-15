@@ -4,13 +4,14 @@ use oauth2::{
     ClientSecret, CsrfToken, RedirectUrl, Scope, TokenResponse, TokenUrl,
 };
 use poem::{
+    error::NotFoundError,
     get, handler,
-    http::{Error, StatusCode},
+    http::StatusCode,
     listener::TcpListener,
     middleware::{Csrf, Tracing},
-    session::{CookieConfig, CookieSession, RedisStorage, ServerSession, Session},
-    web::{CsrfVerifier, Html, Query, Redirect},
-    EndpointExt, IntoResponse, Request, Route, Server,
+    session::{CookieConfig, RedisStorage, ServerSession, Session},
+    web::{Html, Query, Redirect},
+    EndpointExt, IntoResponse, Route, Server,
 };
 use redis::aio::ConnectionManager;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -51,11 +52,12 @@ async fn main() -> Result<(), std::io::Error> {
         .at("/login", get(login))
         .at("/logout", get(logout))
         .at(redirect_path, get(login_authorized))
+        .catch_error(four_oh_four)
         .with(Tracing)
         .with(Csrf::new())
         //.with(CookieSession::new(CookieConfig::default().secure(false)));
         .with(ServerSession::new(
-            CookieConfig::default().secure(false),
+            CookieConfig::default(),
             RedisStorage::new(ConnectionManager::new(redis).await.unwrap()),
         ));
 
@@ -70,44 +72,36 @@ async fn main() -> Result<(), std::io::Error> {
 #[handler]
 async fn index(session: &Session) -> impl IntoResponse {
     let mut context = Context::new();
-    match session.get::<User>("user") {
-        Some(user) => {
-            let client = reqwest::Client::new();
+    if let Some(user) = session.get::<User>("user") {
+        let client = reqwest::Client::new();
 
-            let refresh_token = session.get::<String>("refresh_token").unwrap();
+        let refresh_token = session.get::<String>("refresh_token").unwrap();
 
-            let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
+        let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
 
-            let mut apps = client
-                .get(format!("{authentik_url}/api/v3/core/applications"))
-                .bearer_auth(refresh_token.clone())
-                .send()
-                .await
-                .expect("Request failed")
-                .json::<AppResponse>()
-                .await
-                .expect("JSON failed");
+        let mut apps = client
+            .get(format!("{authentik_url}/api/v3/core/applications"))
+            .bearer_auth(refresh_token.clone())
+            .send()
+            .await
+            .expect("Request failed")
+            .json::<AppResponse>()
+            .await
+            .expect("JSON failed");
 
-            apps.results.sort_by_key(|app| app.group.clone());
+        apps.results.sort_by_key(|app| app.group.clone());
 
-            context.insert("user", &user);
-            context.insert("apps", &apps.results);
-        }
-        None => (),
+        context.insert("user", &user);
+        context.insert("apps", &apps.results);
     };
     let response = TEMPLATES.render("index.html", &context).unwrap();
     Html(response).into_response()
 }
 
 #[handler]
-async fn login() -> Redirect {
+async fn login() -> impl IntoResponse {
     let client = oauth_client();
-    /*let csrf_token = req
-        .header("X-CSRF-Token")
-        .ok_or_else(|| Poem::web::Error::from_status(StatusCode::UNAUTHORIZED))?;
-    if !verifier.is_valid(&csrf_token) {
-        return  Err(Error::from_status(StatusCode::UNAUTHORIZED));
-    }*/
+
     let (auth_url, _csrf_token) = client
         .authorize_url(CsrfToken::new_random)
         .add_scope(Scope::new("openid".to_string()))
@@ -159,6 +153,13 @@ async fn login_authorized(
 async fn logout(session: &Session) -> Redirect {
     session.purge();
     Redirect::permanent("/")
+}
+
+async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
+    let response = TEMPLATES.render("404.html", &Context::new()).unwrap();
+    Html(response)
+        .into_response()
+        .with_status(StatusCode::NOT_FOUND)
 }
 
 fn oauth_client() -> BasicClient {
