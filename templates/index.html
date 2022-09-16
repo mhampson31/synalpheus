@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Index{% endblock %}
+{% block title %}Directory{% endblock %}
 
 {% block head %}
 {% endblock %}
@@ -8,7 +8,6 @@
 {% block content %}
 
 {% if apps %}
-<h1>Your Applications</h1>
 <div>
     <div class="card-deck row row-cols-md-4">
         {% for app in apps %}
