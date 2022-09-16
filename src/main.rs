@@ -4,7 +4,7 @@ use oauth2::{
     ClientSecret, CsrfToken, RedirectUrl, Scope, TokenResponse, TokenUrl,
 };
 use poem::{
-    error::NotFoundError,
+    error::{Error, NotFoundError},
     get, handler,
     http::StatusCode,
     listener::TcpListener,
@@ -99,16 +99,18 @@ async fn index(session: &Session) -> impl IntoResponse {
 }
 
 #[handler]
-async fn login() -> impl IntoResponse {
+async fn login(session: &Session) -> impl IntoResponse {
     let client = oauth_client();
 
-    let (auth_url, _csrf_token) = client
+    let (auth_url, csrf_token) = client
         .authorize_url(CsrfToken::new_random)
         .add_scope(Scope::new("openid".to_string()))
         .add_scope(Scope::new("profile".to_string()))
         .add_scope(Scope::new("email".to_string()))
         .add_scope(Scope::new("goauthentik.io/api".to_string()))
         .url();
+
+    session.set("state", csrf_token);
 
     // Redirect to Authentik
     Redirect::permanent(auth_url)
@@ -117,8 +119,22 @@ async fn login() -> impl IntoResponse {
 #[handler]
 async fn login_authorized(
     session: &Session,
-    Query(AuthRequest { code, state: _ }): Query<AuthRequest>,
-) -> Redirect {
+    Query(AuthRequest { code, state }): Query<AuthRequest>,
+) -> Result<Redirect, Error> {
+    if let Some(csrf_token) = session.get::<CsrfToken>("state") {
+        if csrf_token.secret() != state.secret() {
+            return Err(Error::from_string(
+                "State code does not match",
+                StatusCode::BAD_REQUEST,
+            ));
+        }
+    } else {
+        return Err(Error::from_string(
+            "No state code for this session",
+            StatusCode::BAD_REQUEST,
+        ));
+    }
+
     let client = oauth_client();
     let token = client
         .exchange_code(AuthorizationCode::new(code))
@@ -146,7 +162,7 @@ async fn login_authorized(
     session.set("user", user_data);
     session.set("refresh_token", refresh_token);
 
-    Redirect::permanent("/")
+    Ok(Redirect::permanent("/"))
 }
 
 #[handler]
@@ -185,7 +201,7 @@ fn oauth_client() -> BasicClient {
 #[derive(Debug, Deserialize)]
 struct AuthRequest {
     code: String,
-    state: String,
+    state: CsrfToken,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
