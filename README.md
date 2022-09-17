@@ -11,8 +11,10 @@ What works?
 * Login/logout, althout logout is probably naive
 * Retrieving user data, including applications the user can access, from Authentik
 * Displaying the applications to the user
+* Redis sessions
 
 Future work:
+* Docker integration
 * DB backend
 * User-added bookmark links
 * Substantial prettification
