@@ -64,7 +64,7 @@ async fn main() -> Result<(), std::io::Error> {
     let address = dotenv::var("ADDRESS").expect("Cannot get ADDRESS");
 
     Server::new(TcpListener::bind(address))
-        .name("gonkboard")
+        .name("synalpheus")
         .run(app)
         .await
 }
