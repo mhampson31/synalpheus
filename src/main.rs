@@ -34,18 +34,19 @@ lazy_static! {
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
-    if std::env::var_os("RUST_LOG").is_none() {
-        std::env::set_var("RUST_LOG", "poem=debug");
-    }
-    tracing_subscriber::fmt::init();
-
     dotenv::dotenv().ok();
 
-    let redis_url = env::var("REDIS_URL").expect("Missing REDIS_URL!");
+    if env::var_os("RUST_LOG").is_none() {
+        env::set_var("RUST_LOG", "poem=debug");
+    }
 
+    tracing_subscriber::fmt::init();
+
+    // If $REDIS_URL is not present, assume it's in a Docker container with the hostname "redis"
+    let redis_url = env::var("SYN_REDIS_URL").unwrap_or_else(|_| "redis".to_string());
     let redis = redis::Client::open(format!("redis://{redis_url}/")).unwrap();
 
-    let redirect_path = env::var("REDIRECT_PATH").expect("Missing REDIRECT_PATH!");
+    let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing REDIRECT_PATH!");
 
     let app = Route::new()
         .at("/", get(index))
@@ -61,7 +62,7 @@ async fn main() -> Result<(), std::io::Error> {
             RedisStorage::new(ConnectionManager::new(redis).await.unwrap()),
         ));
 
-    let port = dotenv::var("PORT").unwrap_or_else(|_| "80".to_string());
+    let port = dotenv::var("SYN_PORT").expect("No $PORT is set");
 
     Server::new(TcpListener::bind(format!("0.0.0.0:{port}")))
         .name("synalpheus")
@@ -77,7 +78,7 @@ async fn index(session: &Session) -> impl IntoResponse {
 
         let refresh_token = session.get::<String>("refresh_token").unwrap();
 
-        let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
+        let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
 
         let mut apps = client
             .get(format!("{authentik_url}/api/v3/core/applications"))
@@ -145,7 +146,7 @@ async fn login_authorized(
     let client = reqwest::Client::new();
     let refresh_token = token.refresh_token().unwrap().secret();
 
-    let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
+    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
 
     let user_data: User = client
         .get(format!("{authentik_url}/application/o/userinfo/"))
@@ -179,11 +180,11 @@ async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
 }
 
 fn oauth_client() -> BasicClient {
-    let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
+    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
 
-    let client_id = env::var("CLIENT_ID").expect("Missing CLIENT_ID!");
-    let client_secret = env::var("CLIENT_SECRET").expect("Missing CLIENT_SECRET!");
-    let redirect_url = env::var("REDIRECT_URL").expect("Missing REDIRECT_URL!");
+    let client_id = env::var("SYN_CLIENT_ID").expect("Missing CLIENT_ID!");
+    let client_secret = env::var("SYN_CLIENT_SECRET").expect("Missing CLIENT_SECRET!");
+    let redirect_url = env::var("SYN_REDIRECT_URL").expect("Missing REDIRECT_URL!");
 
     /* These do not appear to be editable, so we can construct them here rather than in the .env */
     let authorize_url = format!("{authentik_url}/application/o/authorize/");
@@ -263,13 +264,13 @@ where
 }
 
 /* Not only is the meta_icon field nullable, but it's also a relative path on Authentik's domain.
- * Here we handle null values and also convert it to an absolute path.
+ * Here we handle null values and also convert it to an absolute path so we can use them.
  * Fortunately we know this field is always going to be a string */
 fn deserde_icon_url<'de, D>(de: D) -> Result<String, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let authentik_url = dotenv::var("AUTHENTIK_URL").expect("Cannot get Authentik URL");
+    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
 
     let url = match Option::<String>::deserialize(de)? {
         Some(key) => format!("{authentik_url}{key}"),
