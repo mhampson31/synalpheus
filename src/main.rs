@@ -61,9 +61,9 @@ async fn main() -> Result<(), std::io::Error> {
             RedisStorage::new(ConnectionManager::new(redis).await.unwrap()),
         ));
 
-    let address = dotenv::var("ADDRESS").expect("Cannot get ADDRESS");
+    let port = dotenv::var("PORT").unwrap_or_else(|_| "80".to_string());
 
-    Server::new(TcpListener::bind(address))
+    Server::new(TcpListener::bind(format!("0.0.0.0:{port}")))
         .name("synalpheus")
         .run(app)
         .await
