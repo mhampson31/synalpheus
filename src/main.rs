@@ -8,7 +8,7 @@ use poem::{
     get, handler,
     http::StatusCode,
     listener::TcpListener,
-    middleware::{Csrf, Tracing},
+    middleware::{CatchPanic, Csrf, Tracing},
     session::{CookieConfig, RedisStorage, ServerSession, Session},
     web::{Html, Query, Redirect},
     EndpointExt, IntoResponse, Route, Server,
@@ -56,6 +56,7 @@ async fn main() -> Result<(), std::io::Error> {
         .catch_error(four_oh_four)
         .with(Tracing)
         .with(Csrf::new())
+        .with(CatchPanic::new())
         //.with(CookieSession::new(CookieConfig::default().secure(false)));
         .with(ServerSession::new(
             CookieConfig::default(),
