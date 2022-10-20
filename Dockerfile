@@ -19,6 +19,7 @@ RUN rm src/*.rs
 
 # Copy the source code
 COPY ./src ./src
+COPY ./templates ./templates
 
 # Build for release.
 RUN rm ./target/release/deps/synalpheus*
@@ -31,9 +32,12 @@ FROM debian:bullseye-slim
 COPY --from=build /synalpheus/target/release/synalpheus /usr/src/synalpheus
 # COPY --from=build /synalpheus/target/release/synalpheus/target/x86_64-unknown-linux-musl/release/synalpheus .
 
+COPY --from=build /synalpheus/templates /usr/src/templates
+
 RUN apt-get update \
     && apt-get install --no-install-recommends -y ca-certificates libssl-dev pkg-config curl \
     && rm -rf /var/lib/apt/lists/*
 
+WORKDIR /usr/src
 # Run the binary
-CMD ["/usr/src/synalpheus"]
+CMD ["./synalpheus"]

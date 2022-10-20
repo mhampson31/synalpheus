@@ -20,13 +20,18 @@ use tera::{Context, Tera};
 
 lazy_static! {
     pub static ref TEMPLATES: Tera = {
-        let mut tera = match Tera::new("templates/**/*") {
-            Ok(t) => t,
-            Err(e) => {
-                println!("Parsing error(s): {}", e);
-                ::std::process::exit(1);
-            }
-        };
+        /* Tera::new(glob) seems to lead to a hang with 100% CPU on Docker.
+         *  https://github.com/Keats/tera/issues/719
+         */
+        let mut tera = Tera::default();
+
+        tera.add_template_files(vec![
+            ("templates/404.html", Some("404.html")),
+            ("templates/base.html", Some("base.html")),
+            ("templates/index.html", Some("index.html")),
+        ])
+        .unwrap();
+
         tera.autoescape_on(vec![".html", ".sql"]);
         tera
     };
