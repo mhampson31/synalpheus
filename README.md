@@ -1,5 +1,5 @@
 # synalpheus
-A dashboard for Authentik-supported apps
+A dashboard for your Authentik-supported apps
 
 Synalpheus is a dashboard that integrates with Authentik, automatically displaying the logged-in user's list of applications. This is all still very incomplete.
 
@@ -12,9 +12,9 @@ What works?
 * Retrieving user data, including applications the user can access, from Authentik
 * Displaying the applications to the user
 * Redis sessions
+* Docker integration
 
 Future work:
-* Docker integration
 * DB backend
 * User-added bookmark links
 * Substantial prettification
