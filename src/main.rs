@@ -68,9 +68,7 @@ async fn main() -> Result<(), std::io::Error> {
             RedisStorage::new(ConnectionManager::new(redis).await.unwrap()),
         ));
 
-    let port = dotenv::var("SYN_PORT").expect("No $PORT is set");
-
-    Server::new(TcpListener::bind(format!("0.0.0.0:{port}")))
+    Server::new(TcpListener::bind("0.0.0.0:80"))
         .name("synalpheus")
         .run(app)
         .await
@@ -284,4 +282,81 @@ where
     };
 
     Ok(url)
+}
+
+/* *** tests *** */
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn load_sample_apps_response() -> Result<AppResponse, serde_json::Error> {
+        let test_data = std::fs::read_to_string("test_data/get-applications-response.json")
+            .expect("Unable to read test data file");
+        serde_json::from_str(&test_data)
+    }
+
+    /* Can we deserialize a user's GET response from Authentik's core/applications endpoint?  */
+    #[test]
+    fn can_parse_applications_response() {
+        let response = load_sample_apps_response();
+        assert!(response.is_ok())
+    }
+
+    /* Are we handling null fields correctly when we deserialize the API responses? */
+    #[test]
+    fn can_deserde_null_field() {
+        let data = r#"
+        {
+            "blankable_int": null,
+            "blankable_string": null
+        }"#;
+
+        #[derive(Deserialize, PartialEq, Debug)]
+        struct NullFieldTester {
+            #[serde(deserialize_with = "deserde_null_field")]
+            blankable_int: i64,
+            #[serde(deserialize_with = "deserde_null_field")]
+            blankable_string: String,
+        }
+
+        let control = NullFieldTester {
+            blankable_int: 0,
+            blankable_string: "".to_string(),
+        };
+
+        let result: NullFieldTester = serde_json::from_str(data).unwrap();
+
+        assert_eq!(control, result)
+    }
+
+    /* Can we convert Authentik's icon URLs from relative to absolute paths correctly?
+     * And we need to account for potentially null URLs too. */
+    #[test]
+    fn can_deserde_icon_url() {
+        let data = r#"
+        {
+            "icon": "/test.png",
+            "null_icon": null
+        }"#;
+
+        #[derive(Deserialize, PartialEq, Debug)]
+        struct IconURLTester {
+            #[serde(deserialize_with = "deserde_icon_url")]
+            icon: String,
+            #[serde(deserialize_with = "deserde_icon_url")]
+            null_icon: String,
+        }
+
+        let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
+
+        let control = IconURLTester {
+            icon: format!("{authentik_url}/test.png"),
+            null_icon: "".to_string(),
+        };
+
+        let result: IconURLTester = serde_json::from_str(data).unwrap();
+
+        assert_eq!(control, result)
+    }
 }
