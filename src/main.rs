@@ -1,22 +1,21 @@
 use lazy_static::lazy_static;
-use oauth2::{
-    basic::BasicClient, reqwest::async_http_client, AuthUrl, AuthorizationCode, ClientId,
-    ClientSecret, CsrfToken, RedirectUrl, Scope, TokenResponse, TokenUrl,
-};
+use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use poem::{
-    error::{Error, NotFoundError},
-    get, handler,
+    error::NotFoundError,
+    get,
     http::StatusCode,
     listener::TcpListener,
     middleware::{CatchPanic, Csrf, Tracing},
-    session::{CookieConfig, RedisStorage, ServerSession, Session},
-    web::{Html, Query, Redirect},
+    session::{CookieConfig, RedisStorage, ServerSession},
+    web::Html,
     EndpointExt, IntoResponse, Route, Server,
 };
 use redis::aio::ConnectionManager;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
 use tera::{Context, Tera};
+
+mod routes;
 
 lazy_static! {
     pub static ref TEMPLATES: Tera = {
@@ -47,17 +46,17 @@ async fn main() -> Result<(), std::io::Error> {
 
     tracing_subscriber::fmt::init();
 
-    // If $REDIS_URL is not present, assume it's in a Docker container with the hostname "redis"
+    // If $SYN_REDIS_URL is not present, assume it's in a Docker container with the hostname "redis"
     let redis_url = env::var("SYN_REDIS_URL").unwrap_or_else(|_| "redis".to_string());
     let redis = redis::Client::open(format!("redis://{redis_url}/")).unwrap();
 
     let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing REDIRECT_PATH!");
 
     let app = Route::new()
-        .at("/", get(index))
-        .at("/login", get(login))
-        .at("/logout", get(logout))
-        .at(redirect_path, get(login_authorized))
+        .at("/", get(routes::index))
+        .at("/login", get(routes::login))
+        .at("/logout", get(routes::logout))
+        .at(redirect_path, get(routes::login_authorized))
         .catch_error(four_oh_four)
         .with(Tracing)
         .with(Csrf::new())
@@ -68,112 +67,12 @@ async fn main() -> Result<(), std::io::Error> {
             RedisStorage::new(ConnectionManager::new(redis).await.unwrap()),
         ));
 
-    Server::new(TcpListener::bind("0.0.0.0:80"))
+    // If $SYN_PORT is not present, run on 80
+    let port = env::var("SYN_PORT").unwrap_or_else(|_| "80".to_string());
+    Server::new(TcpListener::bind(format!("0.0.0.0:{port}")))
         .name("synalpheus")
         .run(app)
         .await
-}
-
-#[handler]
-async fn index(session: &Session) -> impl IntoResponse {
-    let mut context = Context::new();
-    if let Some(user) = session.get::<User>("user") {
-        let client = reqwest::Client::new();
-
-        let refresh_token = session.get::<String>("refresh_token").unwrap();
-
-        let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
-
-        let mut apps = client
-            .get(format!("{authentik_url}/api/v3/core/applications"))
-            .bearer_auth(refresh_token.clone())
-            .send()
-            .await
-            .expect("Request failed")
-            .json::<AppResponse>()
-            .await
-            .expect("JSON failed");
-
-        apps.results.sort_by_key(|app| app.group.clone());
-
-        context.insert("user", &user);
-        context.insert("apps", &apps.results);
-    };
-    let response = TEMPLATES.render("index.html", &context).unwrap();
-    Html(response).into_response()
-}
-
-#[handler]
-async fn login(session: &Session) -> impl IntoResponse {
-    let client = oauth_client();
-
-    let (auth_url, csrf_token) = client
-        .authorize_url(CsrfToken::new_random)
-        .add_scope(Scope::new("openid".to_string()))
-        .add_scope(Scope::new("profile".to_string()))
-        .add_scope(Scope::new("email".to_string()))
-        .add_scope(Scope::new("goauthentik.io/api".to_string()))
-        .url();
-
-    session.set("state", csrf_token);
-
-    // Redirect to Authentik
-    Redirect::permanent(auth_url)
-}
-
-#[handler]
-async fn login_authorized(
-    session: &Session,
-    Query(AuthRequest { code, state }): Query<AuthRequest>,
-) -> Result<Redirect, Error> {
-    if let Some(csrf_token) = session.get::<CsrfToken>("state") {
-        if csrf_token.secret() != state.secret() {
-            return Err(Error::from_string(
-                "State code does not match",
-                StatusCode::BAD_REQUEST,
-            ));
-        }
-    } else {
-        return Err(Error::from_string(
-            "No state code for this session",
-            StatusCode::BAD_REQUEST,
-        ));
-    }
-
-    let client = oauth_client();
-    let token = client
-        .exchange_code(AuthorizationCode::new(code))
-        .request_async(async_http_client)
-        .await
-        .unwrap();
-
-    let client = reqwest::Client::new();
-    let refresh_token = token.refresh_token().unwrap().secret();
-
-    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
-
-    let user_data: User = client
-        .get(format!("{authentik_url}/application/o/userinfo/"))
-        .bearer_auth(token.access_token().secret())
-        .send()
-        .await
-        .unwrap()
-        .json::<User>()
-        .await
-        .unwrap();
-
-    // Create a new session filled with user data
-
-    session.set("user", user_data);
-    session.set("refresh_token", refresh_token);
-
-    Ok(Redirect::permanent("/"))
-}
-
-#[handler]
-async fn logout(session: &Session) -> Redirect {
-    session.purge();
-    Redirect::permanent("/")
 }
 
 async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
@@ -201,12 +100,6 @@ fn oauth_client() -> BasicClient {
         Some(TokenUrl::new(token_url).unwrap()),
     )
     .set_redirect_uri(RedirectUrl::new(redirect_url).unwrap())
-}
-
-#[derive(Debug, Deserialize)]
-struct AuthRequest {
-    code: String,
-    state: CsrfToken,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
