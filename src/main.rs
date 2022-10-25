@@ -183,6 +183,7 @@ where
 mod tests {
     use super::*;
 
+    /* A helper function, not a test itself */
     fn load_sample_apps_response() -> Result<AppResponse, serde_json::Error> {
         let test_data = std::fs::read_to_string("test_data/get-applications-response.json")
             .expect("Unable to read test data file");
