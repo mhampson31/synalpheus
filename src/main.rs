@@ -20,7 +20,8 @@ mod routes;
 lazy_static! {
     pub static ref TEMPLATES: Tera = {
         /* Tera::new(glob) seems to lead to a hang with 100% CPU on Docker.
-         *  https://github.com/Keats/tera/issues/719
+         *   https://github.com/Keats/tera/issues/719
+         * But we don't have many templates, so we'll just add them manually.
          */
         let mut tera = Tera::default();
 
@@ -28,6 +29,7 @@ lazy_static! {
             ("templates/404.html", Some("404.html")),
             ("templates/base.html", Some("base.html")),
             ("templates/index.html", Some("index.html")),
+            ("templates/protected.html", Some("protected.html")),
         ])
         .unwrap();
 
@@ -56,6 +58,7 @@ async fn main() -> Result<(), std::io::Error> {
         .at("/", get(routes::index))
         .at("/login", get(routes::login))
         .at("/logout", get(routes::logout))
+        .at("/protected", get(routes::protected))
         .at(redirect_path, get(routes::login_authorized))
         .catch_error(four_oh_four)
         .with(Tracing)

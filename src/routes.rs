@@ -119,3 +119,10 @@ pub async fn logout(session: &Session) -> Redirect {
     session.purge();
     Redirect::permanent("/")
 }
+
+#[handler]
+pub async fn protected() -> impl IntoResponse {
+    let mut context = Context::new();
+    let response = TEMPLATES.render("protected.html", &context).unwrap();
+    Html(response).into_response()
+}
