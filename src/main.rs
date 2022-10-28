@@ -50,7 +50,7 @@ async fn main() -> Result<(), std::io::Error> {
     let redis_url = env::var("SYN_REDIS_URL").unwrap_or_else(|_| "redis".to_string());
     let redis = redis::Client::open(format!("redis://{redis_url}/")).unwrap();
 
-    let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing REDIRECT_PATH!");
+    let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH!");
 
     let app = Route::new()
         .at("/", get(routes::index))
@@ -182,6 +182,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use poem::{session::CookieSession, test::TestClient};
 
     /* A helper function, not a test itself */
     fn load_sample_apps_response() -> Result<AppResponse, serde_json::Error> {
@@ -202,21 +203,21 @@ mod tests {
     fn can_deserde_null_field() {
         let data = r#"
         {
-            "blankable_int": null,
-            "blankable_string": null
+            "nullable_int": null,
+            "nullable_string": null
         }"#;
 
         #[derive(Deserialize, PartialEq, Debug)]
         struct NullFieldTester {
             #[serde(deserialize_with = "deserde_null_field")]
-            blankable_int: i64,
+            nullable_int: i64,
             #[serde(deserialize_with = "deserde_null_field")]
-            blankable_string: String,
+            nullable_string: String,
         }
 
         let control = NullFieldTester {
-            blankable_int: 0,
-            blankable_string: "".to_string(),
+            nullable_int: 0,
+            nullable_string: "".to_string(),
         };
 
         let result: NullFieldTester = serde_json::from_str(data).unwrap();
@@ -252,5 +253,22 @@ mod tests {
         let result: IconURLTester = serde_json::from_str(data).unwrap();
 
         assert_eq!(control, result)
+    }
+
+    #[tokio::test]
+    async fn can_reach_index() {
+        let app = Route::new()
+            .at("/", get(routes::index))
+            .catch_error(four_oh_four)
+            .with(Csrf::new())
+            .with(CatchPanic::new())
+            .with(CookieSession::new(CookieConfig::default().secure(false)));
+
+        let cli = TestClient::new(app);
+
+        // send request
+        let resp = cli.get("/").send().await;
+        // check the status code
+        resp.assert_status_is_ok();
     }
 }
