@@ -5,25 +5,8 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[workspace]
+members = [".", "api", "entity", "migration"]
+
 [dependencies]
-dotenv = "0.15.0"
-lazy_static = "1.4.0"
-oauth2 = "4.2"
-poem = { version = "1.3", features = [
-    "session",
-    "csrf",
-    "redis-session",
-    "test",
-] }
-redis = { version = "0.22", features = ["aio", "tokio-comp"] }
-reqwest = { version = "0.11", features = ["json"] }
-sea-orm = { version = "0.10.1", features = [
-    "runtime-tokio-rustls",
-    "sqlx-postgres",
-    "mock",
-] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1", features = ["std"] }
-tera = "1.17.0"
-tokio = { version = "1.21", features = ["macros", "rt-multi-thread"] }
-tracing-subscriber = { version = "0.3.15", features = ["env-filter"] }
+api = { path = "api" }
