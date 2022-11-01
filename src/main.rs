@@ -11,6 +11,7 @@ use poem::{
     EndpointExt, IntoResponse, Route, Server,
 };
 use redis::aio::ConnectionManager;
+use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
 use tera::{Context, Tera};
@@ -49,6 +50,12 @@ async fn main() -> Result<(), std::io::Error> {
     // If $SYN_REDIS_URL is not present, assume it's in a Docker container with the hostname "redis"
     let redis_url = env::var("SYN_REDIS_URL").unwrap_or_else(|_| "redis".to_string());
     let redis = redis::Client::open(format!("redis://{redis_url}/")).unwrap();
+
+    // Postgres initialization
+    let postgres = env::var("SYN_POSTGRES_URL").expect("Missing Postgres connection string!");
+    let postgres: DatabaseConnection = Database::connect(postgres)
+        .await
+        .expect("Could not connect to Postgres!");
 
     let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH!");
 
