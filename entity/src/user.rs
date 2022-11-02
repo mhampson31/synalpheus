@@ -7,15 +7,15 @@ pub struct Model {
     #[sea_orm(primary_key)]
     #[serde(skip_deserializing)]
     pub id: i32,
-    email: String,
-    name: String,
+    pub email: String,
+    pub name: String,
     #[serde(rename(deserialize = "preferred_username"))]
     #[sea_orm(ignore)]
-    preferred_username: String,
+    pub preferred_username: String,
     #[sea_orm(ignore)]
-    groups: Option<Vec<String>>,
+    pub groups: Option<Vec<String>>,
     #[sea_orm(ignore)]
-    sub: String,
+    pub sub: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -11,7 +11,7 @@ use poem::{
     EndpointExt, IntoResponse, Route, Server,
 };
 use redis::aio::ConnectionManager;
-use sea_orm::{Database, DatabaseConnection};
+use sea_orm::Database;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
 use tera::{Context, Tera};
@@ -59,7 +59,7 @@ async fn start() -> std::io::Result<()> {
     .await
     .expect("Could not connect to Postgres!");*/
 
-    let connection = sea_orm::Database::connect(&postgres).await.unwrap();
+    let connection = Database::connect(&postgres).await.unwrap();
     Migrator::up(&connection, None).await.unwrap();
 
     let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH!");
@@ -192,13 +192,50 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use entity::user;
     use poem::{session::CookieSession, test::TestClient};
+    use sea_orm::{entity::prelude::*, DatabaseBackend, MockDatabase};
 
     /* A helper function, not a test itself */
     fn load_sample_apps_response() -> Result<AppResponse, serde_json::Error> {
         let test_data = std::fs::read_to_string("test_data/get-applications-response.json")
             .expect("Unable to read test data file");
         serde_json::from_str(&test_data)
+    }
+
+    /* A helper function to set up a mock database */
+    fn load_sample_db() -> sea_orm::DatabaseConnection {
+        MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(vec![
+                // First query result
+                vec![
+                    user::Model {
+                        id: 1,
+                        name: "Alice".to_owned(),
+                        email: "alice at email.com".to_owned(),
+                        preferred_username: "Alice".to_owned(),
+                        groups: None,
+                        sub: "".to_owned(),
+                    },
+                    user::Model {
+                        id: 2,
+                        name: "Bob".to_owned(),
+                        email: "bob at email.com".to_owned(),
+                        preferred_username: "Bob".to_owned(),
+                        groups: None,
+                        sub: "".to_owned(),
+                    },
+                    user::Model {
+                        id: 3,
+                        name: "Charlie".to_owned(),
+                        email: "charlie at email.com".to_owned(),
+                        preferred_username: "Charlie".to_owned(),
+                        groups: None,
+                        sub: "".to_owned(),
+                    },
+                ],
+            ])
+            .into_connection()
     }
 
     /* Can we deserialize a user's GET response from Authentik's core/applications endpoint?  */
@@ -280,5 +317,61 @@ mod tests {
         let resp = cli.get("/").send().await;
         // check the status code
         resp.assert_status_is_ok();
+    }
+
+    #[tokio::test]
+    async fn can_find_one_user() {
+        let db = load_sample_db();
+
+        // Return the first query result
+        assert_eq!(
+            user::Entity::find().one(&db).await.unwrap(),
+            Some(user::Model {
+                id: 1,
+                name: "Alice".to_owned(),
+                email: "alice at email.com".to_owned(),
+                // pref username is not actually save in the DB, so a passing test here is an empty string
+                preferred_username: "".to_owned(),
+                groups: None,
+                sub: "".to_owned(),
+            })
+        );
+    }
+
+    #[tokio::test]
+    async fn can_find_all_users() {
+        let db = load_sample_db();
+
+        // Find all cakes from MockDatabase
+        // Return the second query result
+        assert_eq!(
+            user::Entity::find().all(&db).await.unwrap(),
+            vec![
+                user::Model {
+                    id: 1,
+                    name: "Alice".to_owned(),
+                    email: "alice at email.com".to_owned(),
+                    preferred_username: "".to_owned(),
+                    groups: None,
+                    sub: "".to_owned(),
+                },
+                user::Model {
+                    id: 2,
+                    name: "Bob".to_owned(),
+                    email: "bob at email.com".to_owned(),
+                    preferred_username: "".to_owned(),
+                    groups: None,
+                    sub: "".to_owned(),
+                },
+                user::Model {
+                    id: 3,
+                    name: "Charlie".to_owned(),
+                    email: "charlie at email.com".to_owned(),
+                    preferred_username: "".to_owned(),
+                    groups: None,
+                    sub: "".to_owned(),
+                },
+            ]
+        );
     }
 }
