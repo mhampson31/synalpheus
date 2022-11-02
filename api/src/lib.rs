@@ -54,12 +54,9 @@ async fn start() -> std::io::Result<()> {
     let redis = redis::Client::open(format!("redis://{redis_url}/")).unwrap();
 
     // Postgres initialization
-    let postgres = env::var("SYN_POSTGRES_URL").expect("Missing Postgres connection string!");
-    /*let postgres: DatabaseConnection = Database::connect(postgres)
-    .await
-    .expect("Could not connect to Postgres!");*/
+    let connection = env::var("SYN_POSTGRES_URL").expect("Missing Postgres connection string!");
 
-    let connection = Database::connect(&postgres).await.unwrap();
+    let connection = Database::connect(&connection).await.unwrap();
     Migrator::up(&connection, None).await.unwrap();
 
     let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH!");
@@ -121,6 +118,8 @@ fn oauth_client() -> BasicClient {
     )
     .set_redirect_uri(RedirectUrl::new(redirect_url).unwrap())
 }
+
+// The User struct comes from entity
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct AppResponse {
@@ -342,8 +341,6 @@ mod tests {
     async fn can_find_all_users() {
         let db = load_sample_db();
 
-        // Find all cakes from MockDatabase
-        // Return the second query result
         assert_eq!(
             user::Entity::find().all(&db).await.unwrap(),
             vec![
