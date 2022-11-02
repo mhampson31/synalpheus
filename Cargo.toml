@@ -10,3 +10,5 @@ members = [".", "api", "entity", "migration"]
 
 [dependencies]
 api = { path = "api" }
+entity = { path = "entity" }
+migration = { path = "migration" }

@@ -16,6 +16,8 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
 use tera::{Context, Tera};
 
+use migration::{Migrator, MigratorTrait};
+
 mod routes;
 
 lazy_static! {
@@ -53,9 +55,12 @@ async fn start() -> std::io::Result<()> {
 
     // Postgres initialization
     let postgres = env::var("SYN_POSTGRES_URL").expect("Missing Postgres connection string!");
-    let postgres: DatabaseConnection = Database::connect(postgres)
-        .await
-        .expect("Could not connect to Postgres!");
+    /*let postgres: DatabaseConnection = Database::connect(postgres)
+    .await
+    .expect("Could not connect to Postgres!");*/
+
+    let connection = sea_orm::Database::connect(&postgres).await.unwrap();
+    Migrator::up(&connection, None).await.unwrap();
 
     let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH!");
 
@@ -115,16 +120,6 @@ fn oauth_client() -> BasicClient {
         Some(TokenUrl::new(token_url).unwrap()),
     )
     .set_redirect_uri(RedirectUrl::new(redirect_url).unwrap())
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct User {
-    email: String,
-    name: String,
-    //#[serde(rename(deserialize = "preferred_username"))]
-    preferred_username: String,
-    groups: Option<Vec<String>>,
-    sub: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

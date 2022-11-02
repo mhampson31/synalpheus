@@ -10,7 +10,8 @@ use poem::{
 use serde::Deserialize;
 use tera::Context;
 
-use super::{oauth_client, User, TEMPLATES};
+use super::{oauth_client, TEMPLATES};
+use entity::user::Model as User;
 
 #[derive(Debug, Deserialize)]
 pub struct AuthRequest {

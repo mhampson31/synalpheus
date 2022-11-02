@@ -6,6 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+entity = { path = "../entity" }
+migration = { path = "../migration" }
+
 dotenv = "0.15.0"
 lazy_static = "1.4.0"
 oauth2 = "4.2"
