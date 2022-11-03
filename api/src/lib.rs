@@ -191,7 +191,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use entity::user;
+    use entity::{application, user};
     use poem::{session::CookieSession, test::TestClient};
     use sea_orm::{entity::prelude::*, DatabaseBackend, MockDatabase};
 
@@ -205,35 +205,52 @@ mod tests {
     /* A helper function to set up a mock database */
     fn load_sample_db() -> sea_orm::DatabaseConnection {
         MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results(vec![
-                // First query result
-                vec![
-                    user::Model {
-                        id: 1,
-                        name: "Alice".to_owned(),
-                        email: "alice at email.com".to_owned(),
-                        preferred_username: "Alice".to_owned(),
-                        groups: None,
-                        sub: "".to_owned(),
-                    },
-                    user::Model {
-                        id: 2,
-                        name: "Bob".to_owned(),
-                        email: "bob at email.com".to_owned(),
-                        preferred_username: "Bob".to_owned(),
-                        groups: None,
-                        sub: "".to_owned(),
-                    },
-                    user::Model {
-                        id: 3,
-                        name: "Charlie".to_owned(),
-                        email: "charlie at email.com".to_owned(),
-                        preferred_username: "Charlie".to_owned(),
-                        groups: None,
-                        sub: "".to_owned(),
-                    },
-                ],
-            ])
+            .append_query_results(vec![vec![
+                user::Model {
+                    id: 1,
+                    name: "Alice".to_owned(),
+                    email: "alice at email.com".to_owned(),
+                    preferred_username: "Alice".to_owned(),
+                    groups: None,
+                    sub: "".to_owned(),
+                },
+                user::Model {
+                    id: 2,
+                    name: "Bob".to_owned(),
+                    email: "bob at email.com".to_owned(),
+                    preferred_username: "Bob".to_owned(),
+                    groups: None,
+                    sub: "".to_owned(),
+                },
+                user::Model {
+                    id: 3,
+                    name: "Charlie".to_owned(),
+                    email: "charlie at email.com".to_owned(),
+                    preferred_username: "Charlie".to_owned(),
+                    groups: None,
+                    sub: "".to_owned(),
+                },
+            ]])
+            .append_query_results(vec![vec![
+                application::Model {
+                    id: 1,
+                    name: "App 1".to_owned(),
+                    slug: "app1".to_owned(),
+                    launch_url: "localhost/app1".to_owned(),
+                    open_in_new_tab: true,
+                    icon: "localhost/app1/icon.png".to_owned(),
+                    group: "Testing".to_owned(),
+                },
+                application::Model {
+                    id: 2,
+                    name: "App 2".to_owned(),
+                    slug: "app2".to_owned(),
+                    launch_url: "localhost/app2".to_owned(),
+                    open_in_new_tab: false,
+                    icon: "localhost/app2/icon.png".to_owned(),
+                    group: "".to_owned(),
+                },
+            ]])
             .into_connection()
     }
 
