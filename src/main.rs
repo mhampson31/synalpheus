@@ -38,9 +38,10 @@ lazy_static! {
 
 /* This creates our actual application. We call this out into a seperate function so
  * we can build a nearly-identical app for our testing.
- * The main difference is that we do not configure the session types here, since test
+ * The main difference will be in the session types, which we do not configure here, since test
  * functions will not use Redis. */
 fn create_app() -> impl Endpoint {
+    dotenv::dotenv().ok();
     let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH!");
 
     Route::new()
@@ -194,7 +195,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use poem::{session::CookieSession, test::TestClient};
+    use poem::session::CookieSession;
 
     /* A helper function that mocks a response from Authentik, not a test itself */
     fn load_sample_apps_response() -> Result<AppResponse, serde_json::Error> {
@@ -204,7 +205,7 @@ mod tests {
     }
 
     /* A helper function to simplify the boilerplate of spinning up the app */
-    fn load_test_app() -> impl Endpoint {
+    pub fn load_test_app() -> impl Endpoint {
         let app = create_app();
         app.with(CookieSession::new(CookieConfig::default().secure(false)))
     }
@@ -273,48 +274,5 @@ mod tests {
         let result: IconURLTester = serde_json::from_str(data).unwrap();
 
         assert_eq!(control, result)
-    }
-
-    /* We expect the main index to be generally reachable */
-    #[tokio::test]
-    async fn can_reach_index() {
-        let client = TestClient::new(load_test_app());
-        client.get("/").send().await.assert_status_is_ok();
-    }
-
-    /* We expect the login page to redirect to Authentik */
-    #[tokio::test]
-    async fn can_reach_login() {
-        let client = TestClient::new(load_test_app());
-        client
-            .get("/login")
-            .send()
-            .await
-            .assert_status(StatusCode::PERMANENT_REDIRECT)
-    }
-
-    /* We expect the logout page to redirect back home */
-    #[tokio::test]
-    async fn can_reach_logout() {
-        let client = TestClient::new(load_test_app());
-        client
-            .get("/logout")
-            .send()
-            .await
-            .assert_status(StatusCode::PERMANENT_REDIRECT)
-    }
-
-    /* We expect the OAuth redirect URL to not respond well as to random get requests. */
-    #[tokio::test]
-    async fn can_reach_redirect() {
-        dotenv::dotenv().ok();
-        let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH!");
-        // send request and check the status code
-        let client = TestClient::new(load_test_app());
-        client
-            .get(format!("{redirect_path}?code=foo&state=bar"))
-            .send()
-            .await
-            .assert_status(StatusCode::BAD_REQUEST)
     }
 }

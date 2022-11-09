@@ -119,3 +119,56 @@ pub async fn logout(session: &Session) -> Redirect {
     session.purge();
     Redirect::permanent("/")
 }
+
+/* *** TESTS *** */
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tests::load_test_app;
+    use poem::test::TestClient;
+    use std::env;
+
+    /* We expect the main index to be generally reachable */
+    #[tokio::test]
+    async fn can_reach_index() {
+        let client = TestClient::new(load_test_app());
+        client.get("/").send().await.assert_status_is_ok();
+    }
+
+    /* We expect the login page to redirect to Authentik */
+    #[tokio::test]
+    async fn can_reach_login() {
+        let client = TestClient::new(load_test_app());
+        client
+            .get("/login")
+            .send()
+            .await
+            .assert_status(StatusCode::PERMANENT_REDIRECT)
+    }
+
+    /* We expect the logout page to redirect back home */
+    #[tokio::test]
+    async fn can_reach_logout() {
+        let client = TestClient::new(load_test_app());
+        client
+            .get("/logout")
+            .send()
+            .await
+            .assert_status(StatusCode::PERMANENT_REDIRECT)
+    }
+
+    /* We expect the OAuth redirect URL to not respond well as to random get requests. */
+    #[tokio::test]
+    async fn can_reach_redirect() {
+        dotenv::dotenv().ok();
+        let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH!");
+        // send request and check the status code
+        let client = TestClient::new(load_test_app());
+        client
+            .get(format!("{redirect_path}?code=foo&state=bar"))
+            .send()
+            .await
+            .assert_status(StatusCode::BAD_REQUEST)
+    }
+}
