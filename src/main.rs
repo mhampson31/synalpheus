@@ -8,7 +8,7 @@ use poem::{
     middleware::{CatchPanic, Csrf, Tracing},
     session::{CookieConfig, RedisStorage, ServerSession},
     web::Html,
-    EndpointExt, IntoResponse, Route, Server,
+    Endpoint, EndpointExt, IntoResponse, Route, Server,
 };
 use redis::aio::ConnectionManager;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -36,6 +36,24 @@ lazy_static! {
     };
 }
 
+/* This creates our actual application. We call this out into a seperate function so
+ * we can build a nearly-identical app for our testing.
+ * The main difference is that we do not configure the session types here, since test
+ * functions will not use Redis. */
+fn create_app() -> impl Endpoint {
+    let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH!");
+
+    Route::new()
+        .at("/", get(routes::index))
+        .at("/login", get(routes::login))
+        .at("/logout", get(routes::logout))
+        .at(redirect_path, get(routes::login_authorized))
+        .catch_error(four_oh_four)
+        .with(Tracing)
+        .with(Csrf::new())
+        .with(CatchPanic::new())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     dotenv::dotenv().ok();
@@ -46,26 +64,22 @@ async fn main() -> Result<(), std::io::Error> {
 
     tracing_subscriber::fmt::init();
 
+    let app = create_app();
+
     // If $SYN_REDIS_URL is not present, assume it's in a Docker container with the hostname "redis"
-    let redis_url = env::var("SYN_REDIS_URL").unwrap_or_else(|_| "redis".to_string());
-    let redis = redis::Client::open(format!("redis://{redis_url}/")).unwrap();
+    let redis = env::var("SYN_REDIS_URL").unwrap_or_else(|_| "redis".to_string());
+    let redis = redis::Client::open(format!("redis://{redis}/")).unwrap();
 
-    let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH!");
+    /* There might be a better way to do this. Basically, we need to block on the async ConnectionManager
+     * in order to hand an actual connection to the middleware, not just a future.
+     * */
+    let redis_conn = futures::executor::block_on(ConnectionManager::new(redis))
+        .expect("Could not connect to Redis.");
 
-    let app = Route::new()
-        .at("/", get(routes::index))
-        .at("/login", get(routes::login))
-        .at("/logout", get(routes::logout))
-        .at(redirect_path, get(routes::login_authorized))
-        .catch_error(four_oh_four)
-        .with(Tracing)
-        .with(Csrf::new())
-        .with(CatchPanic::new())
-        //.with(CookieSession::new(CookieConfig::default().secure(false)));
-        .with(ServerSession::new(
-            CookieConfig::default(),
-            RedisStorage::new(ConnectionManager::new(redis).await.unwrap()),
-        ));
+    let app = app.with(ServerSession::new(
+        CookieConfig::default(),
+        RedisStorage::new(redis_conn),
+    ));
 
     // If $SYN_PORT is not present, run on 80
     let port = env::var("SYN_PORT").unwrap_or_else(|_| "80".to_string());
@@ -184,7 +198,7 @@ mod tests {
     use super::*;
     use poem::{session::CookieSession, test::TestClient};
 
-    /* A helper function, not a test itself */
+    /* A helper function that mocks a response from Authentik, not a test itself */
     fn load_sample_apps_response() -> Result<AppResponse, serde_json::Error> {
         let test_data = std::fs::read_to_string("test_data/get-applications-response.json")
             .expect("Unable to read test data file");
@@ -257,18 +271,12 @@ mod tests {
 
     #[tokio::test]
     async fn can_reach_index() {
-        let app = Route::new()
-            .at("/", get(routes::index))
-            .catch_error(four_oh_four)
-            .with(Csrf::new())
-            .with(CatchPanic::new())
-            .with(CookieSession::new(CookieConfig::default().secure(false)));
+        dotenv::dotenv().ok();
+        let app = create_app();
+        let app = app.with(CookieSession::new(CookieConfig::default().secure(false)));
+        let client = TestClient::new(app);
 
-        let cli = TestClient::new(app);
-
-        // send request
-        let resp = cli.get("/").send().await;
-        // check the status code
-        resp.assert_status_is_ok();
+        // send request and check the status code
+        client.get("/").send().await.assert_status_is_ok()
     }
 }
