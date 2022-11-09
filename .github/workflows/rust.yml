@@ -23,7 +23,7 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
       env:
-        SYN_AUTHENTIK_URL: auth.local
+        SYN_AUTHENTIK_URL: http://auth.local
         SYN_REDIRECT_PATH: /auth/authentik
         SYN_CLIENT_ID: 1234
         SYN_CLIENT_SECRET: 4321
