@@ -191,7 +191,7 @@ where
     Ok(url)
 }
 
-/* *** tests *** */
+/* *** TESTS *** */
 
 #[cfg(test)]
 mod tests {
@@ -204,6 +204,14 @@ mod tests {
             .expect("Unable to read test data file");
         serde_json::from_str(&test_data)
     }
+
+    /* A helper function to simplify the boilerplate of spinning up the app */
+    fn load_test_app() -> impl Endpoint {
+        let app = create_app();
+        app.with(CookieSession::new(CookieConfig::default().secure(false)))
+    }
+
+    /* Actual tests begin here */
 
     /* Can we deserialize a user's GET response from Authentik's core/applications endpoint?  */
     #[test]
@@ -269,14 +277,46 @@ mod tests {
         assert_eq!(control, result)
     }
 
+    /* We expect the main index to be generally reachable */
     #[tokio::test]
     async fn can_reach_index() {
-        dotenv::dotenv().ok();
-        let app = create_app();
-        let app = app.with(CookieSession::new(CookieConfig::default().secure(false)));
-        let client = TestClient::new(app);
+        let client = TestClient::new(load_test_app());
+        client.get("/").send().await.assert_status_is_ok();
+    }
 
+    /* We expect the login page to redirect to Authentik */
+    #[tokio::test]
+    async fn can_reach_login() {
+        let client = TestClient::new(load_test_app());
+        client
+            .get("/login")
+            .send()
+            .await
+            .assert_status(StatusCode::PERMANENT_REDIRECT)
+    }
+
+    /* We expect the logout page to redirect back home */
+    #[tokio::test]
+    async fn can_reach_logout() {
+        let client = TestClient::new(load_test_app());
+        client
+            .get("/logout")
+            .send()
+            .await
+            .assert_status(StatusCode::PERMANENT_REDIRECT)
+    }
+
+    /* We expect the OAuth redirect URL to not respond well as to random get requests. */
+    #[tokio::test]
+    async fn can_reach_redirect() {
+        dotenv::dotenv().ok();
+        let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH!");
         // send request and check the status code
-        client.get("/").send().await.assert_status_is_ok()
+        let client = TestClient::new(load_test_app());
+        client
+            .get(format!("{redirect_path}?code=foo&state=bar"))
+            .send()
+            .await
+            .assert_status(StatusCode::BAD_REQUEST)
     }
 }
