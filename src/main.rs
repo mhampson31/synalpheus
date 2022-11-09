@@ -70,15 +70,13 @@ async fn main() -> Result<(), std::io::Error> {
     let redis = env::var("SYN_REDIS_URL").unwrap_or_else(|_| "redis".to_string());
     let redis = redis::Client::open(format!("redis://{redis}/")).unwrap();
 
-    /* There might be a better way to do this. Basically, we need to block on the async ConnectionManager
-     * in order to hand an actual connection to the middleware, not just a future.
-     * */
-    let redis_conn = futures::executor::block_on(ConnectionManager::new(redis))
-        .expect("Could not connect to Redis.");
-
     let app = app.with(ServerSession::new(
         CookieConfig::default(),
-        RedisStorage::new(redis_conn),
+        RedisStorage::new(
+            ConnectionManager::new(redis)
+                .await
+                .expect("Could not connect to Redis."),
+        ),
     ));
 
     // If $SYN_PORT is not present, run on 80
