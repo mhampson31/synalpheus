@@ -24,3 +24,4 @@ jobs:
       run: cargo test --verbose
       env:
         SYN_AUTHENTIK_URL: auth.test
+        SYN_REDIRECT_PATH: /auth/authentik
