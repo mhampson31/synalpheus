@@ -11,19 +11,19 @@
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg bg-light">
-        <div class="container-fluid">
-            <div class="nav-item">
-                {% if user %}
-                <span class="navbar-text">Hello {{user.name}}</span>
-                {% else %}
-                <a class="nav-link" href="/login">Login</a>
-                {% endif %}
-            </div>
-            <div class="nav-item">
-                <a class="nav-link" href="/logout">Logout</a>
-            </div>
+    <nav class="top-bar">
+        {% if user %}
+        <div class="top-bar-left">
+            <span class="navbar-text">Hello {{user.name}}</span>
         </div>
+        <div class="top-bar-right">
+            <a class="nav-link" href="/logout">Logout</a>
+        </div>
+        {% else %}
+        <div class="top-bar-left">
+            <a class="nav-link" href="/login">Login</a>
+        </div>
+        {% endif %}
     </nav>
 
     <div id="content" class="px-3">
@@ -32,6 +32,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/foundation-sites@6.7.5/dist/js/foundation.min.js"
         crossorigin="anonymous"></script>
+
 </body>
 
 </html>
