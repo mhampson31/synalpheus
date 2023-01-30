@@ -8,37 +8,40 @@
 {% block content %}
 
 {% if apps %}
-<div>
-    <div class="card-deck row row-cols-md-4">
+<div class="grid-container">
+    <div class="grid-x grid-margin-x small-up-2 medium-up-3">
         {% for app in apps %}
-        <div class="card mx-2 mb-4 px-0" style="width:24rem">
-            <div class="row mx-1 mt-1">
+        <div class="cell">
+            <div class="card">
+                <div class="card-divider">
 
-                {% if app.meta_icon %}
-                <div class="col-md-4">
-                    <img src="{{app.meta_icon}}" class="card-img m-1">
+                    {% if app.meta_icon %}
+                    <div class="">
+                        <img src="{{app.meta_icon}}" class="">
+                    </div>
+                    {% endif %}
+
+                    <div class="">
+                        <h5 class="">{{ app.name }}</h5>
+
+                        {% if app.group %}
+                        <h6 class="">{{ app.group }}</h6>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <div class="card-section">
+                    <p class="card-text">{{app.meta_description}}</p>
+                </div>
+
+                {% if app.launch_url %}
+                <div class="">
+                    <a href="{{ app.launch_url }}" class="">{{ app.launch_url }}</a>
                 </div>
                 {% endif %}
 
-                <div class="col-md-8">
-                    <h5 class="card-title">{{ app.name }}</h5>
-
-                    {% if app.group %}
-                    <h6 class="card-subtitle">{{app.group}}</h6>
-                    {% endif %}
-                </div>
-
             </div>
-
-            <div class="card-body">
-                <p class="card-text">{{app.meta_description}}</p>
-            </div>
-
-            {% if app.launch_url %}
-            <div class="card-footer">
-                <a href="{{ app.launch_url }}" class="stretched-link">{{ app.launch_url }}</a>
-            </div>
-            {% endif %}
 
         </div>
         {% endfor %}

@@ -11,16 +11,16 @@
 </head>
 
 <body>
-    <nav class="top-bar">
+    <nav class="menu">
         {% if user %}
-        <div class="top-bar-left">
+        <div class="menu-text">
             <span>Hello {{user.name}}</span>
         </div>
-        <div class="top-bar-right">
+        <div>
             <a href="/logout">Logout</a>
         </div>
         {% else %}
-        <div class="top-bar-left">
+        <div>
             <a href="/login">Login</a>
         </div>
         {% endif %}
