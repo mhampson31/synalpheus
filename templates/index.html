@@ -7,46 +7,53 @@
 
 {% block content %}
 
-{% if apps %}
-<div class="grid-container">
-    <div class="grid-x grid-margin-x small-up-2 medium-up-3">
+<div class="container">
+    {% if apps %}
+    <div class="columns is-multiline">
         {% for app in apps %}
-        <div class="cell">
+        <div class="column is-one-third">
             <div class="card">
-                <div class="card-divider">
 
-                    {% if app.meta_icon %}
-                    <div class="">
-                        <img src="{{app.meta_icon}}" class="">
-                    </div>
-                    {% endif %}
-
-                    <div class="">
-                        <h5 class="">{{ app.name }}</h5>
-
-                        {% if app.group %}
-                        <h6 class="">{{ app.group }}</h6>
+                <header class="card-header">
+                    <div class="media">
+                        {% if app.meta_icon %}
+                        <div class="media-left">
+                            <figure class="image is-48x48">
+                                <img src="{{app.meta_icon}}" alt="The {{app.name}} icon">
+                            </figure>
+                        </div>
                         {% endif %}
+                        <div class="media-content">
+                            <p class="title is-4">{{ app.name }}</p>
+                            {% if app.group %}
+                            <p class="subtitle is-6">{{ app.group }}</p>
+                            {% endif %}
+                        </div>
                     </div>
+                </header>
 
-                </div>
-
-                <div class="card-section">
-                    <p class="card-text">{{app.meta_description}}</p>
+                <div class="card-content">
+                    <div class="content">
+                        <div class="card-section">
+                            <p class="card-text">{{app.meta_description}}</p>
+                        </div>
+                    </div>
                 </div>
 
                 {% if app.launch_url %}
-                <div class="">
-                    <a href="{{ app.launch_url }}" class="">{{ app.launch_url }}</a>
-                </div>
+                <footer class="card-footer">
+                    <a href="{{ app.launch_url }}" class="card-footer-item">{{ app.launch_url }}</a>
+                </footer>
                 {% endif %}
 
             </div>
-
         </div>
+
         {% endfor %}
+
     </div>
+    {% endif %}
+
 </div>
-{% endif %}
 
 {% endblock %}
