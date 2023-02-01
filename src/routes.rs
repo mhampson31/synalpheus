@@ -27,6 +27,8 @@ pub async fn index(session: &Session) -> impl IntoResponse {
         let refresh_token = session.get::<String>("refresh_token").unwrap();
 
         let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
+        let synalpheus_app =
+            dotenv::var("SYN_PROVIDER").expect("Cannot get Authentik's Synalpheus app name");
 
         let mut apps = client
             .get(format!("{authentik_url}/api/v3/core/applications"))
@@ -39,6 +41,13 @@ pub async fn index(session: &Session) -> impl IntoResponse {
             .expect("JSON failed");
 
         apps.results.sort_by_key(|app| app.group.clone());
+
+        /* Let's not include this app in the application list */
+        apps.results = apps
+            .results
+            .into_iter()
+            .filter(|app| app.name != synalpheus_app)
+            .collect();
 
         context.insert("user", &user);
         context.insert("apps", &apps.results);
