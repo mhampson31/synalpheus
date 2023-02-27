@@ -12,27 +12,25 @@
 <body>
     <nav class="navbar is-info mb-4" role="navigation" aria-label="main navigation">
         <div class="navbar-menu">
-            {% if user %}
             <div class="navbar-start">
+                {% if user %}
                 <div class="navbar-item">
                     <span>Hello {{user.name}}</span>
                 </div>
-            </div>
-
-            <div class="navbar-end">
-                <div class="navbar-item">
-                    <a class="button" href="/logout">Logout</a>
-                </div>
-            </div>
-
-            {% else %}
-            <div class="navbar-end">
+                {% else %}
                 <div class="navbar-item">
                     <a class="button" href="/login">Login</a>
                 </div>
+                {% endif %}
             </div>
 
-            {% endif %}
+            <div class="navbar-end">
+                {% if user %}
+                <div class="navbar-item">
+                    <a class="button" href="/logout">Logout</a>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </nav>
 
