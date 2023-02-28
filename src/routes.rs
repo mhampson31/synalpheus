@@ -1,4 +1,7 @@
-use oauth2::{reqwest::async_http_client, AuthorizationCode, CsrfToken, Scope, TokenResponse};
+use oauth2::{
+    reqwest::async_http_client, AuthorizationCode, CsrfToken, PkceCodeChallenge, Scope,
+    TokenResponse,
+};
 use poem::{
     error::Error,
     handler,
@@ -24,7 +27,7 @@ pub async fn index(session: &Session) -> impl IntoResponse {
     if let Some(user) = session.get::<User>("user") {
         let client = reqwest::Client::new();
 
-        let refresh_token = session.get::<String>("refresh_token").unwrap();
+        let token = session.get::<String>("access_token").unwrap();
 
         let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
         let synalpheus_app =
@@ -32,7 +35,7 @@ pub async fn index(session: &Session) -> impl IntoResponse {
 
         let mut apps = client
             .get(format!("{authentik_url}/api/v3/core/applications"))
-            .bearer_auth(refresh_token.clone())
+            .bearer_auth(token.clone())
             .send()
             .await
             .expect("Request failed")
@@ -60,15 +63,19 @@ pub async fn index(session: &Session) -> impl IntoResponse {
 pub async fn login(session: &Session) -> impl IntoResponse {
     let client = oauth_client();
 
+    let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
+
     let (auth_url, csrf_token) = client
         .authorize_url(CsrfToken::new_random)
         .add_scope(Scope::new("openid".to_string()))
         .add_scope(Scope::new("profile".to_string()))
         .add_scope(Scope::new("email".to_string()))
         .add_scope(Scope::new("goauthentik.io/api".to_string()))
+        .set_pkce_challenge(pkce_challenge)
         .url();
 
     session.set("state", csrf_token);
+    session.set("pkce", pkce_verifier);
 
     // Redirect to Authentik
     Redirect::permanent(auth_url)
@@ -94,13 +101,20 @@ pub async fn login_authorized(
     }
 
     let client = oauth_client();
+
+    let pkce_verifier = session.get("pkce").unwrap();
+    session.remove("pkce");
+
     let token = client
         .exchange_code(AuthorizationCode::new(code))
+        .set_pkce_verifier(pkce_verifier)
         .request_async(async_http_client)
         .await
         .unwrap();
 
-    let client = reqwest::Client::new();
+    println!("Expires in: {:#?}", token.expires_in().unwrap());
+
+    let access_token = token.access_token().secret();
     let refresh_token = token.refresh_token().unwrap().secret();
 
     let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
@@ -116,17 +130,22 @@ pub async fn login_authorized(
         .unwrap();
 
     // Create a new session filled with user data
-
     session.set("user", user_data);
     session.set("refresh_token", refresh_token);
+    session.set("access_token", access_token);
 
     Ok(Redirect::permanent("/"))
 }
 
 #[handler]
 pub async fn logout(session: &Session) -> Redirect {
+    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
+    let synalpheus_app =
+        dotenv::var("SYN_PROVIDER").expect("Cannot get Authentik's Synalpheus app name");
     session.purge();
-    Redirect::permanent("/")
+    Redirect::permanent(format!(
+        "{authentik_url}/application/o/{synalpheus_app}/end-session/"
+    ))
 }
 
 /* *** TESTS *** */
