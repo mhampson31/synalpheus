@@ -114,6 +114,7 @@ pub async fn login_authorized(
 
     println!("Expires in: {:#?}", token.expires_in().unwrap());
 
+    let client = reqwest::Client::new();
     let access_token = token.access_token().secret();
     let refresh_token = token.refresh_token().unwrap().secret();
 
