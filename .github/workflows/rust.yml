@@ -28,3 +28,4 @@ jobs:
         SYN_CLIENT_ID: 1234
         SYN_CLIENT_SECRET: 4321
         SYN_REDIRECT_URL: http://localhost/auth/authentik
+        SYN_PROVIDER: synalpheus
