@@ -16,6 +16,7 @@ use std::env;
 use tera::{Context, Tera};
 
 mod routes;
+mod error;
 
 lazy_static! {
     pub static ref TEMPLATES: Tera = {
@@ -48,6 +49,7 @@ fn create_app() -> impl Endpoint {
         .at("/", get(routes::index))
         .at("/login", get(routes::login))
         .at("/logout", get(routes::logout))
+        .at("/test/:name", get(routes::error_check))
         .at(redirect_path, get(routes::login_authorized))
         .catch_error(four_oh_four)
         .with(Tracing)
