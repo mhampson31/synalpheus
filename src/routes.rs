@@ -3,16 +3,16 @@ use oauth2::{
     TokenResponse,
 };
 use poem::{
-    error::Error,
     handler,
     http::StatusCode,
     session::Session,
-    web::{Html, Query, Redirect},
-    IntoResponse,
+    web::{Html, Path, Query, Redirect},
+    IntoResponse, Response, Result,
 };
 use serde::Deserialize;
 use tera::Context;
 
+use super::error::SynError;
 use super::{oauth_client, User, TEMPLATES};
 
 #[derive(Debug, Deserialize)]
@@ -22,26 +22,24 @@ pub struct AuthRequest {
 }
 
 #[handler]
-pub async fn index(session: &Session) -> impl IntoResponse {
+pub async fn index(session: &Session) -> Result<impl IntoResponse, SynError> {
     let mut context = Context::new();
     if let Some(user) = session.get::<User>("user") {
         let client = reqwest::Client::new();
 
-        let token = session.get::<String>("access_token").unwrap();
+        /* Send the user back to login if we can't get the access token. Is 303 the right code? */
+        let Some(token) = session.get::<String>("access_token") else {return Ok(Redirect::see_other("/login").into_response())};
 
-        let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
-        let synalpheus_app =
-            dotenv::var("SYN_PROVIDER").expect("Cannot get Authentik's Synalpheus app name");
+        let authentik_url = dotenv::var("SYN_AUTHENTIK_URL")?;
+        let synalpheus_app = dotenv::var("SYN_PROVIDER")?;
 
         let mut apps = client
             .get(format!("{authentik_url}/api/v3/core/applications"))
             .bearer_auth(token.clone())
             .send()
-            .await
-            .expect("Request failed")
+            .await?
             .json::<super::AppResponse>()
-            .await
-            .expect("JSON failed");
+            .await?;
 
         apps.results.sort_by_key(|app| app.group.clone());
 
@@ -55,8 +53,8 @@ pub async fn index(session: &Session) -> impl IntoResponse {
         context.insert("user", &user);
         context.insert("apps", &apps.results);
     };
-    let response = TEMPLATES.render("index.html", &context).unwrap();
-    Html(response).into_response()
+    let response = TEMPLATES.render("index.html", &context)?;
+    Ok(Html(response).into_response())
 }
 
 #[handler]
@@ -85,19 +83,13 @@ pub async fn login(session: &Session) -> impl IntoResponse {
 pub async fn login_authorized(
     session: &Session,
     Query(AuthRequest { code, state }): Query<AuthRequest>,
-) -> Result<Redirect, Error> {
+) -> Result<Redirect, SynError> {
     if let Some(csrf_token) = session.get::<CsrfToken>("state") {
         if csrf_token.secret() != state.secret() {
-            return Err(Error::from_string(
-                "State code does not match",
-                StatusCode::BAD_REQUEST,
-            ));
+            return Err(SynError::BadStateError);
         }
     } else {
-        return Err(Error::from_string(
-            "No state code for this session",
-            StatusCode::BAD_REQUEST,
-        ));
+        return Err(SynError::MissingStateError);
     }
 
     let client = oauth_client();
@@ -118,7 +110,7 @@ pub async fn login_authorized(
     let access_token = token.access_token().secret();
     let refresh_token = token.refresh_token().unwrap().secret();
 
-    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
+    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL")?;
 
     let user_data: User = client
         .get(format!("{authentik_url}/application/o/userinfo/"))
@@ -139,14 +131,21 @@ pub async fn login_authorized(
 }
 
 #[handler]
-pub async fn logout(session: &Session) -> Redirect {
-    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
-    let synalpheus_app =
-        dotenv::var("SYN_PROVIDER").expect("Cannot get Authentik's Synalpheus app name");
+pub async fn logout(session: &Session) -> Result<Redirect, SynError> {
+    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL")?;
+    let synalpheus_app = dotenv::var("SYN_PROVIDER")?;
     session.purge();
-    Redirect::permanent(format!(
+    Ok(Redirect::permanent(format!(
         "{authentik_url}/application/o/{synalpheus_app}/end-session/"
-    ))
+    )))
+}
+
+#[handler]
+pub async fn error_check(Path(name): Path<String>) -> Result<impl IntoResponse, SynError> {
+    let test_url = dotenv::var("TEST")?;
+    Ok(Response::builder()
+        .status(StatusCode::OK)
+        .body(format!("hi {name} you are at {test_url}")))
 }
 
 /* *** TESTS *** */
