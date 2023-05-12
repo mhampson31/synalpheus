@@ -13,11 +13,11 @@ pub enum SynError {
 impl std::fmt::Display for SynError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SynError::ResponseError(response_error) => write!(f, "{}", response_error),
-            SynError::DotenvError(_) => write!(f, "Internal server error"),
-            SynError::TeraError(_) => write!(f, "Template error"),
-            SynError::ReqwestError(_) => write!(f, "Request error"),
-            SynError::BadStateError => write!(f, "State code does not match",),
+            SynError::ResponseError(err) => write!(f, "Response error: {}", err),
+            SynError::DotenvError(err) => write!(f, "Internal server error: {}", err),
+            SynError::TeraError(err) => write!(f, "Template error: {}", err),
+            SynError::ReqwestError(err) => write!(f, "Request error: {}", err),
+            SynError::BadStateError => write!(f, "State code does not match"),
             SynError::MissingStateError => write!(f, "No state code for this session"),
         }
     }
