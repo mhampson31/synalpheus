@@ -33,28 +33,52 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse, SynError> {
         let authentik_url = dotenv::var("SYN_AUTHENTIK_URL")?;
         let synalpheus_app = dotenv::var("SYN_PROVIDER")?;
 
-        let mut apps = client
+        println!("Getting apps...");
+
+        let mut response = client
             .get(format!("{authentik_url}/api/v3/core/applications"))
             .bearer_auth(token.clone())
             .send()
-            .await?
-            .json::<super::AppResponse>()
             .await?;
 
-        apps.results.sort_by_key(|app| app.group.clone());
+        match response.status() {
+            StatusCode::FORBIDDEN => {
+                /* Probably an expired token or something */
+                session.purge();
+                Ok(Redirect::see_other("/login").into_response())
+            }
+            StatusCode::OK => {
+                let mut apps = client
+                    .get(format!("{authentik_url}/api/v3/core/applications"))
+                    .bearer_auth(token.clone())
+                    .send()
+                    .await?
+                    .json::<super::AppResponse>()
+                    .await?;
 
-        /* Let's not include this app in the application list */
-        apps.results = apps
-            .results
-            .into_iter()
-            .filter(|app| app.name != synalpheus_app)
-            .collect();
+                apps.results.sort_by_key(|app| app.group.clone());
 
-        context.insert("user", &user);
-        context.insert("apps", &apps.results);
-    };
-    let response = TEMPLATES.render("index.html", &context)?;
-    Ok(Html(response).into_response())
+                /* Let's not include this app in the application list */
+                apps.results = apps
+                    .results
+                    .into_iter()
+                    .filter(|app| app.name != synalpheus_app)
+                    .collect();
+
+                context.insert("user", &user);
+                context.insert("apps", &apps.results);
+
+                let response = TEMPLATES.render("index.html", &context)?;
+                Ok(Html(response).into_response())
+            }
+            /* This last case needs improving, but will do for now */
+            _ => Ok(Redirect::see_other("/login").into_response()),
+        }
+    } else {
+        /* If we get here, there's no User in the session */
+        session.purge();
+        Ok(Redirect::see_other("/login").into_response())
+    }
 }
 
 #[handler]
