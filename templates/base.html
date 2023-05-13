@@ -64,19 +64,17 @@
                 <div class="navbar-item">
                     <span>Hello {{user.name}}</span>
                 </div>
-                {% else %}
-                <div class="navbar-item">
-                    <a class="button" href="/login">Login</a>
-                </div>
                 {% endif %}
             </div>
 
             <div class="navbar-end">
-                {% if user %}
                 <div class="navbar-item">
+                    {% if user %}
                     <a class="button" href="/logout">Logout</a>
+                    {% else %}
+                    <a class="button" href="/login">Login</a>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
         </div>
     </nav>

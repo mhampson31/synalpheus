@@ -77,7 +77,8 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse, SynError> {
     } else {
         /* If we get here, there's no User in the session */
         session.purge();
-        Ok(Redirect::see_other("/login").into_response())
+        let response = TEMPLATES.render("index.html", &context)?;
+        Ok(Html(response).into_response())
     }
 }
 
