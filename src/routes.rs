@@ -97,11 +97,13 @@ pub async fn login(session: &Session) -> impl IntoResponse {
         .set_pkce_challenge(pkce_challenge)
         .url();
 
+    println!("Current token: {:#?}", csrf_token);
+
     session.set("state", csrf_token);
     session.set("pkce", pkce_verifier);
 
     // Redirect to Authentik
-    Redirect::permanent(auth_url)
+    Redirect::see_other(auth_url)
 }
 
 #[handler]
@@ -114,6 +116,10 @@ pub async fn login_authorized(
             return Err(SynError::BadStateError);
         }
     } else {
+        println!(
+            "Missing state code: {:#?}",
+            session.get("state").unwrap_or_else(|| "none".to_string())
+        );
         return Err(SynError::MissingStateError);
     }
 
