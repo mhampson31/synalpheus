@@ -203,7 +203,7 @@ mod tests {
             .get("/login")
             .send()
             .await
-            .assert_status(StatusCode::PERMANENT_REDIRECT)
+            .assert_status(StatusCode::SEE_OTHER)
     }
 
     /* We expect the logout page to redirect back home */
