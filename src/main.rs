@@ -1,14 +1,14 @@
 use lazy_static::lazy_static;
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use poem::{
-    error::NotFoundError,
+    error::{InternalServerError, NotFoundError},
     get,
     http::StatusCode,
     listener::TcpListener,
     middleware::{CatchPanic, Csrf, Tracing},
     session::{CookieConfig, RedisStorage, ServerSession},
     web::Html,
-    Endpoint, EndpointExt, IntoResponse, Route, Server,
+    Endpoint, EndpointExt, IntoResponse, Result, Route, Server,
 };
 use redis::aio::ConnectionManager;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -16,7 +16,6 @@ use std::env;
 use tera::{Context, Tera};
 
 mod routes;
-mod error;
 
 lazy_static! {
     pub static ref TEMPLATES: Tera = {
@@ -30,7 +29,7 @@ lazy_static! {
             ("templates/base.html", Some("base.html")),
             ("templates/index.html", Some("index.html")),
         ])
-        .unwrap();
+        .expect("Template files could not be loaded");
 
         tera.autoescape_on(vec![".html", ".sql"]);
         tera
@@ -41,24 +40,23 @@ lazy_static! {
  * we can build a nearly-identical app for our testing.
  * The main difference will be in the session types, which we do not configure here, since test
  * functions will not use Redis. */
-fn create_app() -> impl Endpoint {
+fn create_app() -> Result<impl Endpoint> {
     dotenv::dotenv().ok();
-    let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH!");
+    let redirect_path = env::var("SYN_REDIRECT_PATH").map_err(|e| InternalServerError(e))?;
 
-    Route::new()
+    Ok(Route::new()
         .at("/", get(routes::index))
         .at("/login", get(routes::login))
         .at("/logout", get(routes::logout))
-        .at("/test/:name", get(routes::error_check))
         .at(redirect_path, get(routes::login_authorized))
         .catch_error(four_oh_four)
         .with(Tracing)
         .with(Csrf::new())
-        .with(CatchPanic::new())
+        .with(CatchPanic::new()))
 }
 
 #[tokio::main]
-async fn main() -> Result<(), std::io::Error> {
+async fn main() -> Result<()> {
     dotenv::dotenv().ok();
 
     if env::var_os("RUST_LOG").is_none() {
@@ -67,31 +65,35 @@ async fn main() -> Result<(), std::io::Error> {
 
     tracing_subscriber::fmt::init();
 
-    let app = create_app();
+    let app = create_app()?;
 
     // If $SYN_REDIS_URL is not present, assume it's in a Docker container with the hostname "redis"
     let redis = env::var("SYN_REDIS_URL").unwrap_or_else(|_| "redis".to_string());
-    let redis = redis::Client::open(format!("redis://{redis}/")).unwrap();
+    let redis =
+        redis::Client::open(format!("redis://{redis}/")).map_err(|e| InternalServerError(e))?;
 
     let app = app.with(ServerSession::new(
         CookieConfig::default(),
         RedisStorage::new(
             ConnectionManager::new(redis)
                 .await
-                .expect("Could not connect to Redis."),
+                .map_err(|e| InternalServerError(e))?,
         ),
     ));
 
     // If $SYN_PORT is not present, run on 80
     let port = env::var("SYN_PORT").unwrap_or_else(|_| "80".to_string());
-    Server::new(TcpListener::bind(format!("0.0.0.0:{port}")))
+    Ok(Server::new(TcpListener::bind(format!("0.0.0.0:{port}")))
         .name("synalpheus")
         .run(app)
         .await
+        .map_err(|e| InternalServerError(e))?)
 }
 
 async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
-    let response = TEMPLATES.render("404.html", &Context::new()).unwrap();
+    let response = TEMPLATES
+        .render("404.html", &Context::new())
+        .expect("Template failure");
     Html(response)
         .into_response()
         .with_status(StatusCode::NOT_FOUND)
@@ -208,7 +210,7 @@ mod tests {
 
     /* A helper function to simplify the boilerplate of spinning up the app */
     pub fn load_test_app() -> impl Endpoint {
-        let app = create_app();
+        let app = create_app().unwrap();
         app.with(CookieSession::new(CookieConfig::default().secure(false)))
     }
 

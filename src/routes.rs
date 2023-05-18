@@ -3,16 +3,16 @@ use oauth2::{
     TokenResponse,
 };
 use poem::{
+    error::{BadRequest, Error, InternalServerError},
     handler,
     http::StatusCode,
     session::Session,
-    web::{Html, Path, Query, Redirect},
-    IntoResponse, Response, Result,
+    web::{Html, Query, Redirect},
+    IntoResponse, Result,
 };
 use serde::Deserialize;
 use tera::Context;
 
-use super::error::SynError;
 use super::{oauth_client, User, TEMPLATES};
 
 #[derive(Debug, Deserialize)]
@@ -22,7 +22,7 @@ pub struct AuthRequest {
 }
 
 #[handler]
-pub async fn index(session: &Session) -> Result<impl IntoResponse, SynError> {
+pub async fn index(session: &Session) -> Result<impl IntoResponse> {
     let mut context = Context::new();
     if let Some(user) = session.get::<User>("user") {
         let client = reqwest::Client::new();
@@ -30,8 +30,8 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse, SynError> {
         /* Send the user back to login if we can't get the access token. Is 303 the right code? */
         let Some(token) = session.get::<String>("access_token") else {return Ok(Redirect::see_other("/login").into_response())};
 
-        let authentik_url = dotenv::var("SYN_AUTHENTIK_URL")?;
-        let synalpheus_app = dotenv::var("SYN_PROVIDER")?;
+        let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").map_err(|e| InternalServerError(e))?;
+        let synalpheus_app = dotenv::var("SYN_PROVIDER").map_err(|e| InternalServerError(e))?;
 
         println!("Getting apps...");
 
@@ -39,7 +39,8 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse, SynError> {
             .get(format!("{authentik_url}/api/v3/core/applications"))
             .bearer_auth(token.clone())
             .send()
-            .await?;
+            .await
+            .map_err(|e| InternalServerError(e))?;
 
         match response.status() {
             StatusCode::FORBIDDEN => {
@@ -52,9 +53,11 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse, SynError> {
                     .get(format!("{authentik_url}/api/v3/core/applications"))
                     .bearer_auth(token.clone())
                     .send()
-                    .await?
+                    .await
+                    .map_err(|e| InternalServerError(e))?
                     .json::<super::AppResponse>()
-                    .await?;
+                    .await
+                    .map_err(|e| InternalServerError(e))?;
 
                 apps.results.sort_by_key(|app| app.group.clone());
 
@@ -68,7 +71,9 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse, SynError> {
                 context.insert("user", &user);
                 context.insert("apps", &apps.results);
 
-                let response = TEMPLATES.render("index.html", &context)?;
+                let response = TEMPLATES
+                    .render("index.html", &context)
+                    .map_err(|e| InternalServerError(e))?;
                 Ok(Html(response).into_response())
             }
             /* This last case needs improving, but will do for now */
@@ -77,13 +82,15 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse, SynError> {
     } else {
         /* If we get here, there's no User in the session */
         session.purge();
-        let response = TEMPLATES.render("index.html", &context)?;
+        let response = TEMPLATES
+            .render("index.html", &context)
+            .map_err(|e| InternalServerError(e))?;
         Ok(Html(response).into_response())
     }
 }
 
 #[handler]
-pub async fn login(session: &Session) -> impl IntoResponse {
+pub async fn login(session: &Session) -> Result<impl IntoResponse> {
     let client = oauth_client();
 
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
@@ -103,29 +110,37 @@ pub async fn login(session: &Session) -> impl IntoResponse {
     session.set("pkce", pkce_verifier);
 
     // Redirect to Authentik
-    Redirect::see_other(auth_url)
+    Ok(Redirect::see_other(auth_url))
 }
 
 #[handler]
 pub async fn login_authorized(
     session: &Session,
     Query(AuthRequest { code, state }): Query<AuthRequest>,
-) -> Result<Redirect, SynError> {
+) -> Result<Redirect> {
     if let Some(csrf_token) = session.get::<CsrfToken>("state") {
         if csrf_token.secret() != state.secret() {
-            return Err(SynError::BadStateError);
+            return Err(Error::from_string(
+                "State code doesn't match",
+                StatusCode::BAD_REQUEST,
+            ));
         }
     } else {
         println!(
             "Missing state code: {:#?}",
             session.get("state").unwrap_or_else(|| "none".to_string())
         );
-        return Err(SynError::MissingStateError);
+        return Err(Error::from_string(
+            "Missing state code",
+            StatusCode::BAD_REQUEST,
+        ));
     }
 
     let client = oauth_client();
 
-    let pkce_verifier = session.get("pkce").unwrap();
+    let pkce_verifier = session
+        .get("pkce")
+        .ok_or_else(|| Error::from_string("No PKCE code", StatusCode::BAD_REQUEST))?;
     session.remove("pkce");
 
     let token = client
@@ -133,25 +148,28 @@ pub async fn login_authorized(
         .set_pkce_verifier(pkce_verifier)
         .request_async(async_http_client)
         .await
-        .unwrap();
+        .map_err(|e| InternalServerError(e))?;
 
-    println!("Expires in: {:#?}", token.expires_in().unwrap());
+    let access_token = token.access_token().secret();
+    /* How do we actually use the refresh token? */
+    let refresh_token = token
+        .refresh_token()
+        .ok_or_else(|| Error::from_string("No refresh token", StatusCode::BAD_REQUEST))?
+        .secret();
 
     let client = reqwest::Client::new();
-    let access_token = token.access_token().secret();
-    let refresh_token = token.refresh_token().unwrap().secret();
 
-    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL")?;
+    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").map_err(|e| InternalServerError(e))?;
 
     let user_data: User = client
         .get(format!("{authentik_url}/application/o/userinfo/"))
         .bearer_auth(token.access_token().secret())
         .send()
         .await
-        .unwrap()
+        .map_err(|err| BadRequest(err))?
         .json::<User>()
         .await
-        .unwrap();
+        .map_err(|err| BadRequest(err))?;
 
     // Create a new session filled with user data
     session.set("user", user_data);
@@ -162,21 +180,13 @@ pub async fn login_authorized(
 }
 
 #[handler]
-pub async fn logout(session: &Session) -> Result<Redirect, SynError> {
-    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL")?;
-    let synalpheus_app = dotenv::var("SYN_PROVIDER")?;
+pub async fn logout(session: &Session) -> Result<Redirect> {
+    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").map_err(|e| InternalServerError(e))?;
+    let synalpheus_app = dotenv::var("SYN_PROVIDER").map_err(|e| InternalServerError(e))?;
     session.purge();
     Ok(Redirect::permanent(format!(
         "{authentik_url}/application/o/{synalpheus_app}/end-session/"
     )))
-}
-
-#[handler]
-pub async fn error_check(Path(name): Path<String>) -> Result<impl IntoResponse, SynError> {
-    let test_url = dotenv::var("TEST")?;
-    Ok(Response::builder()
-        .status(StatusCode::OK)
-        .body(format!("hi {name} you are at {test_url}")))
 }
 
 /* *** TESTS *** */
