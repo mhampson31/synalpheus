@@ -1,6 +1,5 @@
-use lazy_static::lazy_static;
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
-use once_cell::sync::OnceCell;
+use once_cell::sync::{Lazy, OnceCell};
 use poem::{
     error::{InternalServerError, NotFoundError},
     get,
@@ -19,24 +18,22 @@ use url::Url;
 
 mod routes;
 
-lazy_static! {
-    pub static ref TEMPLATES: Tera = {
-        /* Tera::new(glob) seems to lead to a hang with 100% CPU on Docker.
-         *  https://github.com/Keats/tera/issues/719
-         */
-        let mut tera = Tera::default();
+pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
+    /* Tera::new(glob) seems to lead to a hang with 100% CPU on Docker.
+     *  https://github.com/Keats/tera/issues/719
+     */
+    let mut tera = Tera::default();
 
-        tera.add_template_files(vec![
-            ("templates/404.html", Some("404.html")),
-            ("templates/base.html", Some("base.html")),
-            ("templates/index.html", Some("index.html")),
-        ])
-        .expect("Template files could not be loaded");
+    tera.add_template_files(vec![
+        ("templates/404.html", Some("404.html")),
+        ("templates/base.html", Some("base.html")),
+        ("templates/index.html", Some("index.html")),
+    ])
+    .expect("Template files could not be loaded");
 
-        tera.autoescape_on(vec![".html", ".sql"]);
-        tera
-    };
-}
+    tera.autoescape_on(vec![".html", ".sql"]);
+    tera
+});
 
 pub static CONFIG: OnceCell<Config> = OnceCell::new();
 
