@@ -142,12 +142,9 @@ impl Config {
     pub fn new() -> Config {
         /* Set up what we need to run Synalpheus */
 
-        let mut synalpheus_url = Url::parse(
-            dotenv::var("SYN_URL")
-                .expect("Cannot get Synalpheus URL")
-                .as_str(),
-        )
-        .expect("SYN_URL is not a parsable URL");
+        let mut synalpheus_url =
+            Url::parse(dotenv::var("SYN_URL").expect("Missing SYN_URL").as_str())
+                .expect("SYN_URL is not a parsable URL");
 
         let port: u16 = match dotenv::var("SYN_PORT") {
             Ok(p) => p.parse().expect("SYN_PORT is not a valid port number"),
