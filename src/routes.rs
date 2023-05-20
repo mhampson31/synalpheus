@@ -13,7 +13,7 @@ use poem::{
 use serde::Deserialize;
 use tera::Context;
 
-use super::{oauth_client, User, TEMPLATES};
+use super::{get_config, oauth_client, User, CONFIG, TEMPLATES};
 
 #[derive(Debug, Deserialize)]
 pub struct AuthRequest {
@@ -29,6 +29,8 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
 
         /* Send the user back to login if we can't get the access token. Is 303 the right code? */
         let Some(token) = session.get::<String>("access_token") else {return Ok(Redirect::see_other("/login").into_response())};
+
+        let config = get_config();
 
         let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").map_err(|e| InternalServerError(e))?;
         let synalpheus_app = dotenv::var("SYN_PROVIDER").map_err(|e| InternalServerError(e))?;

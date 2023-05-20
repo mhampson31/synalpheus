@@ -1,5 +1,6 @@
 use lazy_static::lazy_static;
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
+use once_cell::sync::OnceCell;
 use poem::{
     error::{InternalServerError, NotFoundError},
     get,
@@ -36,15 +37,19 @@ lazy_static! {
     };
 }
 
+pub static CONFIG: OnceCell<Config> = OnceCell::new();
+
+pub fn get_config() -> &'static Config {
+    CONFIG.get_or_init(|| Config::new())
+}
+
 /* This creates our actual application. We call this out into a seperate function so
  * we can build a nearly-identical app for our testing.
  * The main difference will be in the session types, which we do not configure here, since test
  * functions will not use Redis. */
-fn create_app() -> Result<impl Endpoint> {
-    dotenv::dotenv().ok();
-    let redirect_path = env::var("SYN_REDIRECT_PATH").map_err(|e| InternalServerError(e))?;
-
-    Ok(Route::new()
+fn create_app() -> impl Endpoint {
+    let redirect_path = get_config().redirect_path.clone();
+    Route::new()
         .at("/", get(routes::index))
         .at("/login", get(routes::login))
         .at("/logout", get(routes::logout))
@@ -52,7 +57,7 @@ fn create_app() -> Result<impl Endpoint> {
         .catch_error(four_oh_four)
         .with(Tracing)
         .with(Csrf::new())
-        .with(CatchPanic::new()))
+        .with(CatchPanic::new())
 }
 
 #[tokio::main]
@@ -65,7 +70,9 @@ async fn main() -> Result<()> {
 
     tracing_subscriber::fmt::init();
 
-    let app = create_app()?;
+    CONFIG.set(Config::new()).unwrap();
+
+    let app = create_app();
 
     // If $SYN_REDIS_URL is not present, assume it's in a Docker container with the hostname "redis"
     let redis = env::var("SYN_REDIS_URL").unwrap_or_else(|_| "redis".to_string());
@@ -100,23 +107,62 @@ async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
 }
 
 fn oauth_client() -> BasicClient {
-    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
-
-    let client_id = env::var("SYN_CLIENT_ID").expect("Missing CLIENT_ID!");
-    let client_secret = env::var("SYN_CLIENT_SECRET").expect("Missing CLIENT_SECRET!");
-    let redirect_url = env::var("SYN_REDIRECT_URL").expect("Missing REDIRECT_URL!");
-
-    /* These do not appear to be editable, so we can construct them here rather than in the .env */
-    let authorize_url = format!("{authentik_url}/application/o/authorize/");
-    let token_url = format!("{authentik_url}/application/o/token/");
+    let config = CONFIG.get_or_init(|| Config::new());
+    //get().authentik_url;
 
     BasicClient::new(
-        ClientId::new(client_id),
-        Some(ClientSecret::new(client_secret)),
-        AuthUrl::new(authorize_url).unwrap(),
-        Some(TokenUrl::new(token_url).unwrap()),
+        ClientId::new(config.client_id.clone()),
+        Some(ClientSecret::new(config.client_secret.clone())),
+        AuthUrl::new(config.authorize_url.clone()).unwrap(),
+        Some(TokenUrl::new(config.token_url.clone()).unwrap()),
     )
-    .set_redirect_uri(RedirectUrl::new(redirect_url).unwrap())
+    .set_redirect_uri(RedirectUrl::new(config.redirect_url.clone()).unwrap())
+}
+
+/* This largely holds our Authentik information */
+#[derive(Debug)]
+pub struct Config {
+    authentik_url: String,
+    client_id: String,
+    client_secret: String,
+    redirect_path: String,
+    redirect_url: String,
+    authorize_url: String,
+    token_url: String,
+}
+
+impl Config {
+    pub fn new() -> Config {
+        // We actually don't need url after this
+        use url::Url;
+
+        let syn_url = dotenv::var("SYN_URL").expect("Cannot get Synalpheus URL");
+        let mut syn_url = Url::parse(syn_url.as_str()).expect("SYN_URL is not a parsable URL");
+
+        let port: u16 = match dotenv::var("SYN_PORT") {
+            Ok(p) => p.parse().expect("Invalid port number"),
+            Err(_) => 80,
+        };
+        syn_url.set_port(Some(port)).expect("Couldn't set the port");
+
+        let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
+        let redirect_path = dotenv::var("SYN_REDIRECT_PATH").expect("Cannot get redirect path");
+
+        Config {
+            authentik_url: authentik_url.clone(),
+            client_id: env::var("SYN_CLIENT_ID").expect("Missing CLIENT_ID!"),
+            client_secret: env::var("SYN_CLIENT_SECRET").expect("Missing CLIENT_SECRET!"),
+            redirect_path: redirect_path.clone(),
+            redirect_url: syn_url
+                .join(redirect_path.as_str())
+                .expect("Couldn't construct redirect URL")
+                .as_str()
+                .into(),
+            /* These do not appear to be editable, so we can construct them here rather than in the .env */
+            authorize_url: format!("{authentik_url}/application/o/authorize/"),
+            token_url: format!("{authentik_url}/application/o/token/"),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -184,7 +230,8 @@ fn deserde_icon_url<'de, D>(de: D) -> Result<String, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
+    let config = get_config();
+    let authentik_url = config.authentik_url.clone();
 
     let url = match Option::<String>::deserialize(de)? {
         Some(key) => format!("{authentik_url}{key}"),
@@ -210,7 +257,7 @@ mod tests {
 
     /* A helper function to simplify the boilerplate of spinning up the app */
     pub fn load_test_app() -> impl Endpoint {
-        let app = create_app().unwrap();
+        let app = create_app();
         app.with(CookieSession::new(CookieConfig::default().secure(false)))
     }
 
@@ -268,10 +315,9 @@ mod tests {
             null_icon: String,
         }
 
-        let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
-
+        let config = get_config();
         let control = IconURLTester {
-            icon: format!("{authentik_url}/test.png"),
+            icon: format!("{}/test.png", config.authentik_url),
             null_icon: "".to_string(),
         };
 
