@@ -13,7 +13,7 @@ use poem::{
 use serde::Deserialize;
 use tera::Context;
 
-use super::{get_config, oauth_client, User, CONFIG, TEMPLATES};
+use super::{get_config, oauth_client, User, TEMPLATES};
 
 #[derive(Debug, Deserialize)]
 pub struct AuthRequest {
@@ -32,13 +32,12 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
 
         let config = get_config();
 
-        let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").map_err(|e| InternalServerError(e))?;
         let synalpheus_app = dotenv::var("SYN_PROVIDER").map_err(|e| InternalServerError(e))?;
 
         println!("Getting apps...");
 
         let mut response = client
-            .get(format!("{authentik_url}/api/v3/core/applications"))
+            .get(config.authentik_api.to_string())
             .bearer_auth(token.clone())
             .send()
             .await
@@ -52,7 +51,7 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
             }
             StatusCode::OK => {
                 let mut apps = client
-                    .get(format!("{authentik_url}/api/v3/core/applications"))
+                    .get(config.authentik_api.to_string())
                     .bearer_auth(token.clone())
                     .send()
                     .await
@@ -138,12 +137,13 @@ pub async fn login_authorized(
         ));
     }
 
-    let client = oauth_client();
-
     let pkce_verifier = session
         .get("pkce")
         .ok_or_else(|| Error::from_string("No PKCE code", StatusCode::BAD_REQUEST))?;
     session.remove("pkce");
+
+    let client = oauth_client();
+    let config = get_config();
 
     let token = client
         .exchange_code(AuthorizationCode::new(code))
@@ -161,10 +161,8 @@ pub async fn login_authorized(
 
     let client = reqwest::Client::new();
 
-    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").map_err(|e| InternalServerError(e))?;
-
     let user_data: User = client
-        .get(format!("{authentik_url}/application/o/userinfo/"))
+        .get(config.userinfo.clone())
         .bearer_auth(token.access_token().secret())
         .send()
         .await
@@ -182,13 +180,10 @@ pub async fn login_authorized(
 }
 
 #[handler]
-pub async fn logout(session: &Session) -> Result<Redirect> {
-    let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").map_err(|e| InternalServerError(e))?;
-    let synalpheus_app = dotenv::var("SYN_PROVIDER").map_err(|e| InternalServerError(e))?;
+pub async fn logout(session: &Session) -> Redirect {
+    let config = get_config();
     session.purge();
-    Ok(Redirect::permanent(format!(
-        "{authentik_url}/application/o/{synalpheus_app}/end-session/"
-    )))
+    Redirect::permanent(config.logout.clone())
 }
 
 /* *** TESTS *** */

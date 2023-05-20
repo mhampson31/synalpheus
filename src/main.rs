@@ -15,6 +15,7 @@ use redis::aio::ConnectionManager;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
 use tera::{Context, Tera};
+use url::Url;
 
 mod routes;
 
@@ -71,6 +72,7 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     CONFIG.set(Config::new()).unwrap();
+    let config = get_config();
 
     let app = create_app();
 
@@ -88,8 +90,8 @@ async fn main() -> Result<()> {
         ),
     ));
 
-    // If $SYN_PORT is not present, run on 80
-    let port = env::var("SYN_PORT").unwrap_or_else(|_| "80".to_string());
+    // If $SYN_PORT is not present, we run on 80
+    let port = config.synalpheus_url.port().expect("Missing port value");
     Ok(Server::new(TcpListener::bind(format!("0.0.0.0:{port}")))
         .name("synalpheus")
         .run(app)
@@ -101,6 +103,7 @@ async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
     let response = TEMPLATES
         .render("404.html", &Context::new())
         .expect("Template failure");
+
     Html(response)
         .into_response()
         .with_status(StatusCode::NOT_FOUND)
@@ -108,59 +111,98 @@ async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
 
 fn oauth_client() -> BasicClient {
     let config = CONFIG.get_or_init(|| Config::new());
-    //get().authentik_url;
 
     BasicClient::new(
         ClientId::new(config.client_id.clone()),
         Some(ClientSecret::new(config.client_secret.clone())),
-        AuthUrl::new(config.authorize_url.clone()).unwrap(),
-        Some(TokenUrl::new(config.token_url.clone()).unwrap()),
+        AuthUrl::new(config.authorize_url.to_string()).unwrap(),
+        Some(TokenUrl::new(config.token_url.to_string()).unwrap()),
     )
-    .set_redirect_uri(RedirectUrl::new(config.redirect_url.clone()).unwrap())
+    .set_redirect_uri(RedirectUrl::new(config.redirect_url.to_string()).unwrap())
 }
 
 /* This largely holds our Authentik information */
 #[derive(Debug)]
 pub struct Config {
-    authentik_url: String,
+    synalpheus_url: Url,
+    authentik_url: Url,
     client_id: String,
     client_secret: String,
     redirect_path: String,
-    redirect_url: String,
-    authorize_url: String,
-    token_url: String,
+    redirect_url: Url,
+    authorize_url: Url,
+    token_url: Url,
+    authentik_api: Url,
+    logout: Url,
+    userinfo: Url,
 }
 
 impl Config {
-    pub fn new() -> Config {
-        // We actually don't need url after this
-        use url::Url;
+    /* We'll use a lot of expect here instead of returning a Result, because the program
+    really shouldn't even run if these don't work.
+    Or in a few cases, we know they're not fallible operations in this context. */
 
-        let syn_url = dotenv::var("SYN_URL").expect("Cannot get Synalpheus URL");
-        let mut syn_url = Url::parse(syn_url.as_str()).expect("SYN_URL is not a parsable URL");
+    pub fn new() -> Config {
+        /* Set up what we need to run Synalpheus */
+
+        let mut synalpheus_url = Url::parse(
+            dotenv::var("SYN_URL")
+                .expect("Cannot get Synalpheus URL")
+                .as_str(),
+        )
+        .expect("SYN_URL is not a parsable URL");
 
         let port: u16 = match dotenv::var("SYN_PORT") {
-            Ok(p) => p.parse().expect("Invalid port number"),
+            Ok(p) => p.parse().expect("SYN_PORT is not a valid port number"),
             Err(_) => 80,
         };
-        syn_url.set_port(Some(port)).expect("Couldn't set the port");
+        synalpheus_url
+            .set_port(Some(port))
+            .expect("Couldn't set the port");
 
-        let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Cannot get Authentik URL");
-        let redirect_path = dotenv::var("SYN_REDIRECT_PATH").expect("Cannot get redirect path");
+        /* Set up what we need to talk to Authentik */
+        let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Missing SYN_AUTHENTIK_URL");
+        let authentik_url =
+            Url::parse(authentik_url.as_str()).expect("SYN_AUTHENTIK_URL is not a parsable URL");
+
+        let redirect_path = dotenv::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH");
+
+        let syn_provider = dotenv::var("SYN_PROVIDER").expect("Missing SYN_PROVIDER");
 
         Config {
+            synalpheus_url: synalpheus_url.clone(),
+
             authentik_url: authentik_url.clone(),
-            client_id: env::var("SYN_CLIENT_ID").expect("Missing CLIENT_ID!"),
-            client_secret: env::var("SYN_CLIENT_SECRET").expect("Missing CLIENT_SECRET!"),
+
+            client_id: env::var("SYN_CLIENT_ID").expect("Missing SYN_CLIENT_ID!"),
+
+            client_secret: env::var("SYN_CLIENT_SECRET").expect("Missing SYN_CLIENT_SECRET!"),
+
             redirect_path: redirect_path.clone(),
-            redirect_url: syn_url
+
+            redirect_url: synalpheus_url
                 .join(redirect_path.as_str())
-                .expect("Couldn't construct redirect URL")
-                .as_str()
-                .into(),
-            /* These do not appear to be editable, so we can construct them here rather than in the .env */
-            authorize_url: format!("{authentik_url}/application/o/authorize/"),
-            token_url: format!("{authentik_url}/application/o/token/"),
+                .expect("Couldn't construct redirect URL"),
+
+            authorize_url: authentik_url
+                .join("application/o/authorize/")
+                .expect("Could not construct Authentik authorize endpoint"),
+
+            token_url: authentik_url
+                .join("application/o/token/")
+                .expect("Could not construct Authentik token endpoint"),
+
+            authentik_api: authentik_url
+                .join("api/v3/core/applications/")
+                .expect("Could not construct Authentik API URL"),
+
+            userinfo: authentik_url
+                .join("application/o/userinfo/")
+                .expect("Could not construct userinfo endpoint"),
+
+            logout: authentik_url
+                .join(format!("application/o/{syn_provider}/end-session/").as_str())
+                .expect("Could not construct logout endpoint"),
         }
     }
 }
