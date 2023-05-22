@@ -42,6 +42,7 @@ pub static CONFIG: OnceCell<Config> = OnceCell::new();
 pub struct Config {
     synalpheus_url: Url,
     authentik_url: Url,
+    syn_provider: String,
     client_id: String,
     client_secret: String,
     redirect_path: String,
@@ -81,12 +82,14 @@ impl Config {
 
         let redirect_path = dotenv::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH");
 
-        let syn_provider = dotenv::var("SYN_PROVIDER").expect("Missing SYN_PROVIDER");
+        let syn_provider = dotenv::var("SYN_PROVIDER").unwrap_or_else(|_| "Synalpheus".to_string());
 
         Config {
             synalpheus_url: synalpheus_url.clone(),
 
             authentik_url: authentik_url.clone(),
+
+            syn_provider: syn_provider.clone(),
 
             client_id: env::var("SYN_CLIENT_ID").expect("Missing SYN_CLIENT_ID!"),
 

@@ -32,10 +32,6 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
 
         let config = get_config();
 
-        let synalpheus_app = dotenv::var("SYN_PROVIDER").map_err(|e| InternalServerError(e))?;
-
-        println!("Getting apps...");
-
         let mut response = client
             .get(config.authentik_api.to_string())
             .bearer_auth(token.clone())
@@ -66,7 +62,7 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
                 apps.results = apps
                     .results
                     .into_iter()
-                    .filter(|app| app.name != synalpheus_app)
+                    .filter(|app| app.name.to_lowercase() != config.syn_provider.to_lowercase())
                     .collect();
 
                 context.insert("user", &user);
@@ -193,7 +189,6 @@ mod tests {
     use super::*;
     use crate::tests::load_test_app;
     use poem::test::TestClient;
-    use std::env;
 
     /* We expect the main index to be generally reachable */
     #[tokio::test]
@@ -224,11 +219,11 @@ mod tests {
             .assert_status(StatusCode::PERMANENT_REDIRECT)
     }
 
-    /* We expect the OAuth redirect URL to not respond well as to random get requests. */
+    /* We expect the OAuth redirect URL to respond to, but not handle random, get requests. */
     #[tokio::test]
     async fn can_reach_redirect() {
-        dotenv::dotenv().ok();
-        let redirect_path = env::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH!");
+        let config = get_config();
+        let redirect_path = config.redirect_path.clone();
         // send request and check the status code
         let client = TestClient::new(load_test_app());
         client
