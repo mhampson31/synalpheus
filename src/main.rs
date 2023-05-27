@@ -52,6 +52,7 @@ pub struct Config {
     authentik_api: Url,
     logout: Url,
     userinfo: Url,
+    port: u16,
 }
 
 impl Config {
@@ -70,10 +71,6 @@ impl Config {
             Ok(p) => p.parse().expect("SYN_PORT is not a valid port number"),
             Err(_) => 80,
         };
-
-        synalpheus_url
-            .set_port(Some(port))
-            .expect("Couldn't set the port");
 
         /* Set up what we need to talk to Authentik */
         let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Missing SYN_AUTHENTIK_URL");
@@ -120,6 +117,8 @@ impl Config {
             logout: authentik_url
                 .join(format!("application/o/{syn_provider}/end-session/").as_str())
                 .expect("Could not construct logout endpoint"),
+
+            port: port.clone(),
         }
     }
 }
@@ -158,6 +157,7 @@ async fn main() -> Result<()> {
     CONFIG.set(Config::new()).unwrap();
     let config = get_config();
 
+    println!("Creating application...");
     let app = create_app();
 
     // If $SYN_REDIS_URL is not present, assume it's in a Docker container with the hostname "redis"
@@ -176,7 +176,7 @@ async fn main() -> Result<()> {
 
     // If $SYN_PORT is not present, we run on 80.
     // url::Url's port methods will probably return a None in our default cases
-    let port = config.synalpheus_url.port().unwrap_or_else(|| 80);
+    let port = config.port;
 
     Ok(Server::new(TcpListener::bind(format!("0.0.0.0:{port}")))
         .name("synalpheus")
