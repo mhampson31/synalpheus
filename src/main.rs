@@ -40,7 +40,6 @@ pub static CONFIG: OnceCell<Config> = OnceCell::new();
 /* This largely holds our Authentik information */
 #[derive(Debug)]
 pub struct Config {
-    synalpheus_url: Url,
     authentik_url: Url,
     syn_provider: String,
     client_id: String,
@@ -63,9 +62,8 @@ impl Config {
     pub fn new() -> Config {
         /* Set up what we need to run Synalpheus */
 
-        let mut synalpheus_url =
-            Url::parse(dotenv::var("SYN_URL").expect("Missing SYN_URL").as_str())
-                .expect("SYN_URL is not a parsable URL");
+        let synalpheus_url = Url::parse(dotenv::var("SYN_URL").expect("Missing SYN_URL").as_str())
+            .expect("SYN_URL is not a parsable URL");
 
         let port: u16 = match dotenv::var("SYN_PORT") {
             Ok(p) => p.parse().expect("SYN_PORT is not a valid port number"),
@@ -82,8 +80,6 @@ impl Config {
         let syn_provider = dotenv::var("SYN_PROVIDER").unwrap_or_else(|_| "Synalpheus".to_string());
 
         Config {
-            synalpheus_url: synalpheus_url.clone(),
-
             authentik_url: authentik_url.clone(),
 
             syn_provider: syn_provider.clone(),
