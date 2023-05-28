@@ -191,7 +191,7 @@ async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
         .with_status(StatusCode::NOT_FOUND)
 }
 
-fn oauth_client() -> BasicClient {
+fn get_oauth_client() -> BasicClient {
     let config = CONFIG.get_or_init(|| Config::new());
 
     BasicClient::new(

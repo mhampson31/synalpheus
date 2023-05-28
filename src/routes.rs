@@ -13,7 +13,7 @@ use poem::{
 use serde::Deserialize;
 use tera::Context;
 
-use super::{get_config, oauth_client, User, TEMPLATES};
+use super::{get_config, get_oauth_client, User, TEMPLATES};
 
 #[derive(Debug, Deserialize)]
 pub struct AuthRequest {
@@ -88,7 +88,7 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
 
 #[handler]
 pub async fn login(session: &Session) -> Result<impl IntoResponse> {
-    let client = oauth_client();
+    let client = get_oauth_client();
 
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
 
@@ -138,7 +138,7 @@ pub async fn login_authorized(
         .ok_or_else(|| Error::from_string("No PKCE code", StatusCode::BAD_REQUEST))?;
     session.remove("pkce");
 
-    let client = oauth_client();
+    let client = get_oauth_client();
     let config = get_config();
 
     let token = client
