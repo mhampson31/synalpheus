@@ -11,6 +11,7 @@ use poem::{
     Endpoint, EndpointExt, IntoResponse, Result, Route, Server,
 };
 use redis::aio::ConnectionManager;
+use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
 use tera::{Context, Tera};
@@ -155,6 +156,12 @@ async fn main() -> Result<()> {
 
     println!("Creating application...");
     let app = create_app();
+
+    // Postgres
+    let postgres = env::var("SYN_POSTGRES_URL").expect("Missing SYN_POSTGRES_URL");
+    let db: DatabaseConnection = Database::connect(postgres)
+        .await
+        .map_err(|e| InternalServerError(e))?;
 
     // If $SYN_REDIS_URL is not present, assume it's in a Docker container with the hostname "redis"
     let redis = env::var("SYN_REDIS_URL").unwrap_or_else(|_| "redis".to_string());

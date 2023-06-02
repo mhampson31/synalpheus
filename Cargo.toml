@@ -3,9 +3,14 @@ name = "synalpheus"
 version = "0.2.7"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace]
+members = [".", "migration"]
+
 
 [dependencies]
+#entity = { path = "entity" }
+migration = { path = "migration" }
 dotenv = "0.15.0"
 futures = { version = "0.3", features = ["executor"] }
 oauth2 = "4"
@@ -23,6 +28,11 @@ redis = { version = "0.22", features = [
     "connection-manager",
 ] }
 reqwest = { version = "0.11", features = ["json"] }
+sea-orm = { version = "^0", features = [
+    "sqlx-postgres",
+    "runtime-tokio-rustls",
+    "macros",
+] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1", features = ["std"] }
 tera = "1.18"
