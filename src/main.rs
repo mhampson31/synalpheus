@@ -17,6 +17,7 @@ use std::env;
 use tera::{Context, Tera};
 use url::Url;
 
+mod data;
 mod routes;
 
 pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
