@@ -48,12 +48,6 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(
-                        ColumnDef::new(Application::Pk)
-                            .string()
-                            .unique_key()
-                            .not_null(),
-                    )
                     .col(ColumnDef::new(Application::Name).string().not_null())
                     .col(ColumnDef::new(Application::Slug).string().not_null())
                     .col(ColumnDef::new(Application::LaunchUrl).string().not_null())
@@ -130,18 +124,18 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(ApplicationGroup::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(ApplicationGroup::ApplicationPk).string())
+                    .col(ColumnDef::new(ApplicationGroup::ApplicationId).integer())
                     .col(ColumnDef::new(ApplicationGroup::GroupPk).string())
                     .primary_key(
                         Index::create()
-                            .col(ApplicationGroup::ApplicationPk)
+                            .col(ApplicationGroup::ApplicationId)
                             .col(ApplicationGroup::GroupPk),
                     )
                     .foreign_key(
                         ForeignKey::create()
                             .name("FK_ApplicationGroup_User")
-                            .from(ApplicationGroup::Table, ApplicationGroup::ApplicationPk)
-                            .to(Application::Table, Application::Pk)
+                            .from(ApplicationGroup::Table, ApplicationGroup::ApplicationId)
+                            .to(Application::Table, Application::Id)
                             .on_delete(ForeignKeyAction::Cascade)
                             .on_update(ForeignKeyAction::Cascade),
                     )
@@ -205,7 +199,6 @@ enum Group {
 enum Application {
     Table,
     Id,
-    Pk,
     Name,
     Slug,
     LaunchUrl,
@@ -232,6 +225,6 @@ enum UserGroup {
 #[derive(Iden)]
 enum ApplicationGroup {
     Table,
-    ApplicationPk,
+    ApplicationId,
     GroupPk,
 }
