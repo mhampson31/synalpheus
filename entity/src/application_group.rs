@@ -6,7 +6,7 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "application_group")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub application_pk: String,
+    pub application_id: i32,
     #[sea_orm(primary_key, auto_increment = false)]
     pub group_pk: String,
 }
@@ -15,8 +15,8 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(
         belongs_to = "super::application::Entity",
-        from = "Column::ApplicationPk",
-        to = "super::application::Column::Pk",
+        from = "Column::ApplicationId",
+        to = "super::application::Column::Id",
         on_update = "Cascade",
         on_delete = "Cascade"
     )]

@@ -30,6 +30,7 @@ pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
         ("templates/404.html", Some("404.html")),
         ("templates/base.html", Some("base.html")),
         ("templates/index.html", Some("index.html")),
+        ("templates/local_apps.html", Some("local_apps.html")),
     ])
     .expect("Template files could not be loaded");
 
@@ -37,9 +38,9 @@ pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
     tera
 });
 
+/* This largely holds our Authentik information */
 pub static CONFIG: OnceCell<Config> = OnceCell::new();
 
-/* This largely holds our Authentik information */
 #[derive(Debug)]
 pub struct Config {
     authentik_url: Url,
@@ -125,6 +126,13 @@ pub fn get_config() -> &'static Config {
     CONFIG.get_or_init(|| Config::new())
 }
 
+/* Database connection */
+pub static DATABASE: OnceCell<DatabaseConnection> = OnceCell::new();
+
+pub fn get_db() -> &'static DatabaseConnection {
+    DATABASE.get().expect("Database has not been initialized")
+}
+
 /* This creates our actual application. We call this out into a seperate function so
  * we can build a nearly-identical app for our testing.
  * The main difference will be in the session types, which we do not configure here, since test
@@ -135,6 +143,7 @@ fn create_app() -> impl Endpoint {
         .at("/", get(routes::index))
         .at("/login", get(routes::login))
         .at("/logout", get(routes::logout))
+        .at("/apps", get(routes::local_apps))
         .at(redirect_path, get(routes::login_authorized))
         .catch_error(four_oh_four)
         .with(Tracing)
@@ -155,14 +164,15 @@ async fn main() -> Result<()> {
     CONFIG.set(Config::new()).unwrap();
     let config = get_config();
 
+    println!("Connecting to database...");
+    let postgres = env::var("SYN_POSTGRES_URL").expect("Missing SYN_POSTGRES_URL");
+    let db = Database::connect(postgres)
+        .await
+        .expect("Could not connect to database");
+    DATABASE.set(db).unwrap();
+
     println!("Creating application...");
     let app = create_app();
-
-    // Postgres
-    let postgres = env::var("SYN_POSTGRES_URL").expect("Missing SYN_POSTGRES_URL");
-    let db: DatabaseConnection = Database::connect(postgres)
-        .await
-        .map_err(|e| InternalServerError(e))?;
 
     // If $SYN_REDIS_URL is not present, assume it's in a Docker container with the hostname "redis"
     let redis = env::var("SYN_REDIS_URL").unwrap_or_else(|_| "redis".to_string());

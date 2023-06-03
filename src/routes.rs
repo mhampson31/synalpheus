@@ -10,10 +10,12 @@ use poem::{
     web::{Html, Query, Redirect},
     IntoResponse, Result,
 };
+use sea_orm::EntityTrait;
 use serde::Deserialize;
 use tera::Context;
 
-use super::{get_config, get_oauth_client, User, TEMPLATES};
+use super::{get_config, get_db, get_oauth_client, User, TEMPLATES};
+use entity::application::Entity as Application;
 
 #[derive(Debug, Deserialize)]
 pub struct AuthRequest {
@@ -180,6 +182,25 @@ pub async fn logout(session: &Session) -> Redirect {
     let config = get_config();
     session.purge();
     Redirect::permanent(config.logout.clone())
+}
+
+#[handler]
+pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
+    let mut context = Context::new();
+    let db = get_db();
+
+    let apps: Vec<entity::application::Model> = Application::find()
+        .all(db)
+        .await
+        .map_err(|e| InternalServerError(e))?;
+
+    println!("All the applications in db:");
+    context.insert("apps", &apps);
+
+    let response = TEMPLATES
+        .render("local_apps.html", &context)
+        .map_err(|e| InternalServerError(e))?;
+    Ok(Html(response).into_response())
 }
 
 /* *** TESTS *** */
