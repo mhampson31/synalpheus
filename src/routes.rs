@@ -15,7 +15,7 @@ use serde::Deserialize;
 use tera::Context;
 
 use super::{get_config, get_db, get_oauth_client, User, TEMPLATES};
-use entity::application::Entity as LocalApp;
+use entity::application::Entity as Application;
 
 #[derive(Debug, Deserialize)]
 pub struct AuthRequest {
@@ -75,6 +75,8 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
                     .map_err(|e| InternalServerError(e))?;
 
                 context.insert("user", &user);
+                context.insert("auth_apps", &auth_apps.results);
+                context.insert("syn_apps", &syn_apps);
                 context.insert("auth_apps", &auth_apps.results);
                 context.insert("syn_apps", &syn_apps);
 
