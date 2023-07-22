@@ -12,6 +12,7 @@ pub struct Model {
     pub slug: String,
     pub launch_url: String,
     pub icon: Option<String>,
+    pub description: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

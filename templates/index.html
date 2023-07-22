@@ -8,7 +8,10 @@
 {% block content %}
 
 <div class="container px-4">
-    {% if apps %}
+
+    {% set apps = auth_apps | concat(with=syn_apps) %}
+
+    {% if auth_apps %}
     <div class="columns is-multiline">
         {% for app in apps %}
         <div class="column is-half-tablet is-one-third-desktop is-one-quarter-widescreen">
@@ -18,8 +21,8 @@
                     <div class="media">
                         <div class="media-left">
                             <figure class="image is-48x48">
-                                {% if app.meta_icon %}
-                                <img src="{{app.meta_icon}}" alt="The {{app.name}} icon">
+                                {% if app.icon %}
+                                <img src="{{app.icon}}" alt="The {{app.name}} icon">
                                 {% else %}
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="#1a5fb4"
                                     viewBox="0 0 576 512"><!--! Font Awesome Pro 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
@@ -42,7 +45,7 @@
                 <div class="card-content">
                     <div class="content">
                         <div class="card-section">
-                            <p class="card-text">{{app.meta_description}}</p>
+                            <p class="card-text">{{app.description}}</p>
                         </div>
                     </div>
                 </div>
@@ -58,6 +61,10 @@
 
         {% endfor %}
 
+    </div>
+    {% else %}
+    <div>
+        No apps
     </div>
     {% endif %}
 

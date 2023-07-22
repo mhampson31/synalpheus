@@ -56,6 +56,11 @@ impl MigrationTrait for Migration {
                             .string()
                             .default(Some("".to_string())),
                     )
+                    .col(
+                        ColumnDef::new(Application::Description)
+                            .string()
+                            .default(Some("".to_string())),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -203,6 +208,7 @@ enum Application {
     Slug,
     LaunchUrl,
     Icon,
+    Description,
 }
 
 #[derive(Iden)]

@@ -265,7 +265,8 @@ struct Application {
         rename(deserialize = "meta_icon")
     )]
     icon: String,
-    meta_description: String,
+    #[serde(rename(deserialize = "meta_description"))]
+    description: String,
     meta_publisher: String,
     policy_engine_mode: String,
     group: String,
