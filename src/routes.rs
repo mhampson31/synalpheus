@@ -15,7 +15,7 @@ use serde::Deserialize;
 use tera::Context;
 
 use super::{get_config, get_db, get_oauth_client, User, TEMPLATES};
-use entity::application::Entity as Application;
+use entity::application::Entity as LocalApp;
 
 #[derive(Debug, Deserialize)]
 pub struct AuthRequest {
@@ -48,7 +48,7 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
                 Ok(Redirect::see_other("/login").into_response())
             }
             StatusCode::OK => {
-                let mut apps = client
+                let mut auth_apps = client
                     .get(config.authentik_api.to_string())
                     .bearer_auth(token.clone())
                     .send()
@@ -58,17 +58,25 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
                     .await
                     .map_err(|e| InternalServerError(e))?;
 
-                apps.results.sort_by_key(|app| app.group.clone());
+                auth_apps.results.sort_by_key(|app| app.group.clone());
 
                 /* Let's not include this app in the application list */
-                apps.results = apps
+                auth_apps.results = auth_apps
                     .results
                     .into_iter()
                     .filter(|app| app.name.to_lowercase() != config.syn_provider.to_lowercase())
                     .collect();
 
+                /* local applications */
+                let db = get_db();
+                let syn_apps: Vec<entity::application::Model> = LocalApp::find()
+                    .all(db)
+                    .await
+                    .map_err(|e| InternalServerError(e))?;
+
                 context.insert("user", &user);
-                context.insert("apps", &apps.results);
+                context.insert("auth_apps", &auth_apps.results);
+                context.insert("syn_apps", &syn_apps);
 
                 let response = TEMPLATES
                     .render("index.html", &context)
@@ -189,7 +197,7 @@ pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
     let mut context = Context::new();
     let db = get_db();
 
-    let apps: Vec<entity::application::Model> = Application::find()
+    let apps: Vec<entity::application::Model> = LocalApp::find()
         .all(db)
         .await
         .map_err(|e| InternalServerError(e))?;
