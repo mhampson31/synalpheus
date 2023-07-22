@@ -260,8 +260,11 @@ struct Application {
     launch_url: String,
     open_in_new_tab: bool,
     meta_launch_url: String,
-    #[serde(deserialize_with = "deserde_icon_url")]
-    meta_icon: String,
+    #[serde(
+        deserialize_with = "deserde_icon_url",
+        rename(deserialize = "meta_icon")
+    )]
+    icon: String,
     meta_description: String,
     meta_publisher: String,
     policy_engine_mode: String,
@@ -308,7 +311,7 @@ mod tests {
     fn load_sample_apps_response() -> Result<AppResponse, serde_json::Error> {
         let test_data = std::fs::read_to_string("test_data/get-applications-response.json")
             .expect("Unable to read test data file");
-        serde_json::from_str(&test_data)
+        serde_json::from_str::<AppResponse>(&test_data)
     }
 
     /* A helper function to simplify the boilerplate of spinning up the app */

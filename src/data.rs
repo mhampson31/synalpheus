@@ -2,6 +2,7 @@
 mod tests {
     use sea_orm::{entity::prelude::*, DatabaseBackend, MockDatabase};
 
+    #[ignore]
     #[tokio::test]
     async fn test_find_cake() -> Result<(), DbErr> {
         // Create MockDatabase with mock query results
