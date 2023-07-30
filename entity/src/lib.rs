@@ -3,7 +3,6 @@
 pub mod prelude;
 
 pub mod application;
-pub mod application_group;
 pub mod group;
 pub mod user;
 pub mod user_group;

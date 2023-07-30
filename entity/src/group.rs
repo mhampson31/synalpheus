@@ -26,13 +26,4 @@ impl Related<super::user::Entity> for Entity {
     }
 }
 
-impl Related<super::application::Entity> for Entity {
-    fn to() -> RelationDef {
-        super::application_group::Relation::Application.def()
-    }
-    fn via() -> Option<RelationDef> {
-        Some(super::application_group::Relation::Group.def().rev())
-    }
-}
-
 impl ActiveModelBehavior for ActiveModel {}

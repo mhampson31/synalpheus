@@ -57,6 +57,12 @@ impl MigrationTrait for Migration {
                             .default(Some("".to_string())),
                     )
                     .col(
+                        ColumnDef::new(Application::Group)
+                            .string()
+                            .default(Some("".to_string())),
+                    )
+                    .to_owned()
+                    .col(
                         ColumnDef::new(Application::Description)
                             .string()
                             .default(Some("".to_string())),
@@ -123,39 +129,6 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
-        println!("Create table ApplicationGroup");
-        manager
-            .create_table(
-                Table::create()
-                    .table(ApplicationGroup::Table)
-                    .if_not_exists()
-                    .col(ColumnDef::new(ApplicationGroup::ApplicationId).integer())
-                    .col(ColumnDef::new(ApplicationGroup::GroupPk).string())
-                    .primary_key(
-                        Index::create()
-                            .col(ApplicationGroup::ApplicationId)
-                            .col(ApplicationGroup::GroupPk),
-                    )
-                    .foreign_key(
-                        ForeignKey::create()
-                            .name("FK_ApplicationGroup_User")
-                            .from(ApplicationGroup::Table, ApplicationGroup::ApplicationId)
-                            .to(Application::Table, Application::Id)
-                            .on_delete(ForeignKeyAction::Cascade)
-                            .on_update(ForeignKeyAction::Cascade),
-                    )
-                    .foreign_key(
-                        ForeignKey::create()
-                            .name("FK_ApplicationGroup_Group")
-                            .from(ApplicationGroup::Table, ApplicationGroup::GroupPk)
-                            .to(Group::Table, Group::Pk)
-                            .on_delete(ForeignKeyAction::Cascade)
-                            .on_update(ForeignKeyAction::Cascade),
-                    )
-                    .to_owned(),
-            )
-            .await?;
-
         Ok(())
     }
 
@@ -163,11 +136,6 @@ impl MigrationTrait for Migration {
         println!("Drop table UserGroup");
         manager
             .drop_table(Table::drop().table(UserGroup::Table).to_owned())
-            .await?;
-
-        println!("Drop table ApplicationGroup");
-        manager
-            .drop_table(Table::drop().table(ApplicationGroup::Table).to_owned())
             .await?;
 
         println!("Drop table Group");
@@ -208,6 +176,7 @@ enum Application {
     Slug,
     LaunchUrl,
     Icon,
+    Group,
     Description,
 }
 
@@ -225,12 +194,5 @@ enum User {
 enum UserGroup {
     Table,
     UserPk,
-    GroupPk,
-}
-
-#[derive(Iden)]
-enum ApplicationGroup {
-    Table,
-    ApplicationId,
     GroupPk,
 }
