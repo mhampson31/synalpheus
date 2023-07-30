@@ -11,11 +11,12 @@ use poem::{
     IntoResponse, Result,
 };
 use sea_orm::EntityTrait;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tera::Context;
 
-use super::{get_config, get_db, get_oauth_client, User, TEMPLATES};
-use entity::application::Entity as Application;
+use super::{get_config, get_db, get_oauth_client, AppCard, AppResponse, User, TEMPLATES};
+
+use entity::application::Entity as LocalApp;
 
 #[derive(Debug, Deserialize)]
 pub struct AuthRequest {
@@ -54,31 +55,39 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
                     .send()
                     .await
                     .map_err(|e| InternalServerError(e))?
-                    .json::<super::AppResponse>()
+                    .json::<AppResponse>()
                     .await
                     .map_err(|e| InternalServerError(e))?;
 
-                auth_apps.results.sort_by_key(|app| app.group.clone());
+                /* This vec will hold our apps, whether from Authentik or the DB */
+                let mut applications: Vec<AppCard> = Vec::new();
 
                 /* Let's not include this app in the application list */
-                auth_apps.results = auth_apps
-                    .results
-                    .into_iter()
-                    .filter(|app| app.name.to_lowercase() != config.syn_provider.to_lowercase())
-                    .collect();
+                applications.append(
+                    &mut auth_apps
+                        .results
+                        .into_iter()
+                        .filter(|app| app.name.to_lowercase() != config.syn_provider.to_lowercase())
+                        .map(|a| a.into())
+                        .collect(),
+                );
 
                 /* local applications */
                 let db = get_db();
-                let syn_apps: Vec<entity::application::Model> = LocalApp::find()
-                    .all(db)
-                    .await
-                    .map_err(|e| InternalServerError(e))?;
+                applications.append(
+                    &mut LocalApp::find()
+                        .all(db)
+                        .await
+                        .map_err(|e| InternalServerError(e))?
+                        .into_iter()
+                        .map(|a| a.into())
+                        .collect(),
+                );
+
+                applications.sort_by_key(|app| app.group.clone());
 
                 context.insert("user", &user);
-                context.insert("auth_apps", &auth_apps.results);
-                context.insert("syn_apps", &syn_apps);
-                context.insert("auth_apps", &auth_apps.results);
-                context.insert("syn_apps", &syn_apps);
+                context.insert("applications", &applications);
 
                 let response = TEMPLATES
                     .render("index.html", &context)

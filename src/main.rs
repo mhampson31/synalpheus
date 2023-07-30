@@ -234,7 +234,7 @@ struct User {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct AppResponse {
     pagination: Option<Pagination>,
-    results: Vec<Application>,
+    results: Vec<AuthentikApp>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -248,9 +248,12 @@ struct Pagination {
     end_index: i64,
 }
 
+/* This doesn't currently need to do anything */
+trait Application {}
+
 /* We probably don't need all these fields */
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct Application {
+pub struct AuthentikApp {
     pk: String,
     name: String,
     slug: String,
@@ -270,6 +273,44 @@ struct Application {
     meta_publisher: String,
     policy_engine_mode: String,
     group: String,
+}
+
+/* We have two sources for applications right now, Authentik and our local data via SeaORM.
+ * This will let us homogenize them for passing to a response context.*/
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AppCard {
+    icon: String,
+    name: String,
+    group: String,
+    description: String,
+    launch_url: String,
+}
+
+/* Can we use generics here? The app structs are very similar. */
+
+impl From<AuthentikApp> for AppCard {
+    fn from(app: AuthentikApp) -> Self {
+        AppCard {
+            icon: app.icon,
+            name: app.name,
+            group: app.group,
+            description: app.description,
+            launch_url: app.launch_url,
+        }
+    }
+}
+
+impl From<entity::application::Model> for AppCard {
+    fn from(app: entity::application::Model) -> Self {
+        AppCard {
+            icon: app.icon.unwrap_or_default(),
+            name: app.name,
+            group: app.group.unwrap_or_default(),
+            description: app.description.unwrap_or_default(),
+            launch_url: app.launch_url,
+        }
+    }
 }
 
 /* Some fields are optional in Authentik, and are present in the API response as nulls.
