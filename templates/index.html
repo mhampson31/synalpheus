@@ -8,6 +8,7 @@
 {% block content %}
 
 <div class="container px-4">
+    {% if user %}
 
     {% if applications %}
     <div class="columns is-multiline">
@@ -64,6 +65,10 @@
     <div>
         No apps
     </div>
+    {% endif %}
+
+    {% else %}
+    Not logged in
     {% endif %}
 
 </div>
