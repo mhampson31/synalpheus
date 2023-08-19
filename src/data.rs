@@ -26,24 +26,26 @@ mod tests {
         };
 
         // Create MockDatabase with mock query results
-        let db = MockDatabase::new(DatabaseBackend::Postgres).append_query_results([
-            // First query result
-            vec![app_1.clone()],
-            // Second query result
-            vec![app_1.clone(), app_2.clone()],
-        ]);
+        let db: &DatabaseConnection = &MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results([
+                // First query result
+                vec![app_1.clone()],
+                // Second query result
+                vec![app_1.clone(), app_2.clone()],
+            ])
+            .into_connection();
 
         // Find an app from MockDatabase
         // Return the first query result
         assert_eq!(
-            application::Entity::find().one(&db).await?,
+            application::Entity::find().one(db).await?,
             Some(app_1.clone())
         );
 
         // Find all applications
         // Return the second query result
         assert_eq!(
-            application::Entity::find().all(&db).await?,
+            application::Entity::find().all(db).await?,
             [app_1.clone(), app_2.clone()]
         );
 
