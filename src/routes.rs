@@ -11,7 +11,7 @@ use poem::{
     IntoResponse, Result,
 };
 use sea_orm::EntityTrait;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use tera::Context;
 
 use super::{get_config, get_db, get_oauth_client, AppCard, AppResponse, User, TEMPLATES};
@@ -40,7 +40,7 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
             .bearer_auth(token.clone())
             .send()
             .await
-            .map_err(|e| InternalServerError(e))?;
+            .map_err(InternalServerError)?;
 
         match response.status() {
             StatusCode::FORBIDDEN => {
@@ -54,10 +54,10 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
                     .bearer_auth(token.clone())
                     .send()
                     .await
-                    .map_err(|e| InternalServerError(e))?
+                    .map_err(InternalServerError)?
                     .json::<AppResponse>()
                     .await
-                    .map_err(|e| InternalServerError(e))?;
+                    .map_err(InternalServerError)?;
 
                 /* This vec will hold our apps, whether from Authentik or the DB */
                 let mut applications: Vec<AppCard> = Vec::new();
@@ -78,7 +78,7 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
                     &mut LocalApp::find()
                         .all(db)
                         .await
-                        .map_err(|e| InternalServerError(e))?
+                        .map_err(InternalServerError)?
                         .into_iter()
                         .map(|a| a.into())
                         .collect(),
@@ -91,7 +91,7 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
 
                 let response = TEMPLATES
                     .render("index.html", &context)
-                    .map_err(|e| InternalServerError(e))?;
+                    .map_err(InternalServerError)?;
                 Ok(Html(response).into_response())
             }
             /* This last case needs improving, but will do for now */
@@ -102,7 +102,7 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
         session.purge();
         let response = TEMPLATES
             .render("index.html", &context)
-            .map_err(|e| InternalServerError(e))?;
+            .map_err(InternalServerError)?;
         Ok(Html(response).into_response())
     }
 }
@@ -167,7 +167,7 @@ pub async fn login_authorized(
         .set_pkce_verifier(pkce_verifier)
         .request_async(async_http_client)
         .await
-        .map_err(|e| InternalServerError(e))?;
+        .map_err(InternalServerError)?;
 
     let access_token = token.access_token().secret();
     /* How do we actually use the refresh token? */
@@ -183,10 +183,10 @@ pub async fn login_authorized(
         .bearer_auth(token.access_token().secret())
         .send()
         .await
-        .map_err(|err| BadRequest(err))?
+        .map_err(BadRequest)?
         .json::<User>()
         .await
-        .map_err(|err| BadRequest(err))?;
+        .map_err(BadRequest)?;
 
     // Create a new session filled with user data
     session.set("user", user_data);
@@ -204,21 +204,21 @@ pub async fn logout(session: &Session) -> Redirect {
 }
 
 #[handler]
-pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
+pub async fn local_apps() -> Result<impl IntoResponse> {
     let mut context = Context::new();
     let db = get_db();
 
     let apps: Vec<entity::application::Model> = LocalApp::find()
         .all(db)
         .await
-        .map_err(|e| InternalServerError(e))?;
+        .map_err(InternalServerError)?;
 
     println!("All the applications in db:");
     context.insert("apps", &apps);
 
     let response = TEMPLATES
         .render("local_apps.html", &context)
-        .map_err(|e| InternalServerError(e))?;
+        .map_err(InternalServerError)?;
     Ok(Html(response).into_response())
 }
 

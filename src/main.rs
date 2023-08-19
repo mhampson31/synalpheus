@@ -117,13 +117,19 @@ impl Config {
                 .join(format!("application/o/{syn_provider}/end-session/").as_str())
                 .expect("Could not construct logout endpoint"),
 
-            port: port.clone(),
+            port,
         }
     }
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub fn get_config() -> &'static Config {
-    CONFIG.get_or_init(|| Config::new())
+    CONFIG.get_or_init(Config::new)
 }
 
 /* Database connection */
@@ -176,15 +182,14 @@ async fn main() -> Result<()> {
 
     // If $SYN_REDIS_URL is not present, assume it's in a Docker container with the hostname "redis"
     let redis = env::var("SYN_REDIS_URL").unwrap_or_else(|_| "redis".to_string());
-    let redis =
-        redis::Client::open(format!("redis://{redis}/")).map_err(|e| InternalServerError(e))?;
+    let redis = redis::Client::open(format!("redis://{redis}/")).map_err(InternalServerError)?;
 
     let app = app.with(ServerSession::new(
         CookieConfig::default(),
         RedisStorage::new(
             ConnectionManager::new(redis)
                 .await
-                .map_err(|e| InternalServerError(e))?,
+                .map_err(InternalServerError)?,
         ),
     ));
 
@@ -192,11 +197,11 @@ async fn main() -> Result<()> {
     // url::Url's port methods will probably return a None in our default cases
     let port = config.port;
 
-    Ok(Server::new(TcpListener::bind(format!("0.0.0.0:{port}")))
+    Server::new(TcpListener::bind(format!("0.0.0.0:{port}")))
         .name("synalpheus")
         .run(app)
         .await
-        .map_err(|e| InternalServerError(e))?)
+        .map_err(InternalServerError)
 }
 
 async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
@@ -210,7 +215,7 @@ async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
 }
 
 fn get_oauth_client() -> BasicClient {
-    let config = CONFIG.get_or_init(|| Config::new());
+    let config = CONFIG.get_or_init(Config::new);
 
     BasicClient::new(
         ClientId::new(config.client_id.clone()),
@@ -278,6 +283,13 @@ pub struct AuthentikApp {
 /* We have two sources for applications right now, Authentik and our local data via SeaORM.
  * This will let us homogenize them for passing to a response context.*/
 
+#[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
+enum Source {
+    #[default]
+    Authentik,
+    Local,
+}
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AppCard {
     icon: String,
@@ -285,6 +297,7 @@ pub struct AppCard {
     group: String,
     description: String,
     launch_url: String,
+    source: Source,
 }
 
 /* Can we use generics here? The app structs are very similar. */
@@ -297,6 +310,7 @@ impl From<AuthentikApp> for AppCard {
             group: app.group,
             description: app.description,
             launch_url: app.launch_url,
+            source: Source::Authentik,
         }
     }
 }
@@ -309,6 +323,7 @@ impl From<entity::application::Model> for AppCard {
             group: app.group.unwrap_or_default(),
             description: app.description.unwrap_or_default(),
             launch_url: app.launch_url,
+            source: Source::Local,
         }
     }
 }
