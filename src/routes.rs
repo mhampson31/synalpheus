@@ -188,6 +188,14 @@ pub async fn login_authorized(
         .await
         .map_err(BadRequest)?;
 
+    let j = client
+        .get(config.userinfo.clone())
+        .bearer_auth(token.access_token().secret())
+        .send()
+        .await
+        .map_err(BadRequest)?;
+    println!("{}", j.text().await.map_err(BadRequest)?);
+
     // Create a new session filled with user data
     session.set("user", user_data);
     session.set("refresh_token", refresh_token);

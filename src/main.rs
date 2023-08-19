@@ -149,7 +149,7 @@ fn create_app() -> impl Endpoint {
         .at("/", get(routes::index))
         .at("/login", get(routes::login))
         .at("/logout", get(routes::logout))
-        .at("/apps", get(routes::local_apps))
+        .at("/local-apps", get(routes::local_apps))
         .at(redirect_path, get(routes::login_authorized))
         .catch_error(four_oh_four)
         .with(Tracing)
