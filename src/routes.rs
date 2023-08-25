@@ -212,22 +212,30 @@ pub async fn logout(session: &Session) -> Redirect {
 }
 
 #[handler]
-pub async fn local_apps() -> Result<impl IntoResponse> {
+pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
     let mut context = Context::new();
-    let db = get_db();
 
-    let apps: Vec<entity::application::Model> = LocalApp::find()
-        .all(db)
-        .await
-        .map_err(InternalServerError)?;
+    match session.get::<User>("user") {
+        Some(user) if user.is_superuser() => {
+            let db = get_db();
 
-    println!("All the applications in db:");
-    context.insert("apps", &apps);
+            let apps: Vec<entity::application::Model> = LocalApp::find()
+                .all(db)
+                .await
+                .map_err(InternalServerError)?;
 
-    let response = TEMPLATES
-        .render("local_apps.html", &context)
-        .map_err(InternalServerError)?;
-    Ok(Html(response).into_response())
+            context.insert("apps", &apps);
+
+            let response = TEMPLATES
+                .render("local_apps.html", &context)
+                .map_err(InternalServerError)?;
+            Ok(Html(response).into_response())
+        }
+        _ => {
+            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
+            Ok(Redirect::see_other("/").into_response())
+        }
+    }
 }
 
 /* *** TESTS *** */
