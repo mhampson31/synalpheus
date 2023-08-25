@@ -10,8 +10,8 @@
 <div class="container px-4">
     {% if user %}
 
-    {% if applications %}
     <div class="columns is-multiline">
+        {% if applications %}
         {% for app in applications %}
         <div class="column is-half-tablet is-one-third-desktop is-one-quarter-widescreen">
             <div class="card">
@@ -60,12 +60,17 @@
 
         {% endfor %}
 
-    </div>
-    {% else %}
-    <div>
+        {% else %}
+
         No apps
+
+        {% endif %}
+
+        {% if user.is_superuser %}
+        <button hx-get="/modal" hx-target="body" hx-swap="beforeend">Open a Modal</button>
+        {% endif %}
+
     </div>
-    {% endif %}
 
     {% else %}
     Not logged in

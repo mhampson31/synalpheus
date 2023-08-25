@@ -65,7 +65,7 @@
                     <span>Hello {{user.name}}</span>
                 </div>
 
-                {% if 'authentik Admins' in user.groups %}
+                {% if user.is_superuser %}
                 <a class="navbar-item" href="/local-apps">Local Applications</a>
                 {% endif %}
 

@@ -236,6 +236,17 @@ struct User {
     sub: String,
 }
 
+impl User {
+    fn is_superuser(&self) -> bool {
+        /* Checks if the user is in Authentik's admin group.
+         * The core/user/me endpoint does have an is_superuser value, but we don't build the User from that.
+         * Todo: configure this group in .env */
+        self.groups
+            .clone()
+            .is_some_and(|g| g.contains(&"authentik Admins".to_string()))
+    }
+}
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct AppResponse {
     pagination: Option<Pagination>,
@@ -440,5 +451,42 @@ mod tests {
         let result: IconURLTester = serde_json::from_str(data).unwrap();
 
         assert_eq!(control, result)
+    }
+
+    #[test]
+    fn can_check_superuser() {
+        // this User should return true
+        let super_user = User {
+            email: "email".to_string(),
+            name: "name".to_string(),
+            preferred_username: "pref name".to_string(),
+            groups: Some(vec![
+                "authentik Admins".to_string(),
+                "other group".to_string(),
+            ]),
+            sub: "sub".to_string(),
+        };
+
+        // false, but in other groups
+        let normal_user = User {
+            email: "email".to_string(),
+            name: "name".to_string(),
+            preferred_username: "pref name".to_string(),
+            groups: Some(vec!["other group".to_string()]),
+            sub: "sub".to_string(),
+        };
+
+        // false, in no groups
+        let none_user = User {
+            email: "email".to_string(),
+            name: "name".to_string(),
+            preferred_username: "pref name".to_string(),
+            groups: None,
+            sub: "sub".to_string(),
+        };
+
+        assert!(super_user.is_superuser());
+        assert!(!normal_user.is_superuser());
+        assert!(!none_user.is_superuser());
     }
 }
