@@ -1,5 +1,5 @@
 # Rust as the base image
-FROM rust:1.69-slim-bullseye as build
+FROM rust:1.71-slim-bullseye as build
 
 # Create a new empty shell project
 RUN USER=root cargo new --bin synalpheus
@@ -8,6 +8,8 @@ WORKDIR /synalpheus
 # Copy our manifests
 COPY ./Cargo.lock ./Cargo.lock
 COPY ./Cargo.toml ./Cargo.toml
+COPY ./entity ./entity
+COPY ./migration ./migration
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y libssl-dev pkg-config \
@@ -20,6 +22,8 @@ RUN rm src/*.rs
 # Copy the source code
 COPY ./src ./src
 COPY ./templates ./templates
+COPY ./entity ./entity
+COPY ./migration ./migration
 
 # Build for release.
 RUN rm ./target/release/deps/synalpheus*
