@@ -230,21 +230,11 @@ fn get_oauth_client() -> BasicClient {
 struct User {
     email: String,
     name: String,
-    //#[serde(rename(deserialize = "preferred_username"))]
     preferred_username: String,
     groups: Option<Vec<String>>,
     sub: String,
-}
-
-impl User {
-    fn is_superuser(&self) -> bool {
-        /* Checks if the user is in Authentik's admin group.
-         * The core/user/me endpoint does have an is_superuser value, but we don't build the User from that.
-         * Todo: configure this group in .env */
-        self.groups
-            .clone()
-            .is_some_and(|g| g.contains(&"authentik Admins".to_string()))
-    }
+    #[serde(default)]
+    is_superuser: bool,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -465,6 +455,7 @@ mod tests {
                 "other group".to_string(),
             ]),
             sub: "sub".to_string(),
+            is_superuser: true,
         };
 
         // false, but in other groups
@@ -474,6 +465,7 @@ mod tests {
             preferred_username: "pref name".to_string(),
             groups: Some(vec!["other group".to_string()]),
             sub: "sub".to_string(),
+            is_superuser: false,
         };
 
         // false, in no groups
@@ -483,6 +475,7 @@ mod tests {
             preferred_username: "pref name".to_string(),
             groups: None,
             sub: "sub".to_string(),
+            is_superuser: false,
         };
 
         assert!(super_user.is_superuser());

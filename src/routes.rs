@@ -178,23 +178,25 @@ pub async fn login_authorized(
 
     let client = reqwest::Client::new();
 
-    let user_data: User = client
-        .get(config.userinfo.clone())
-        .bearer_auth(token.access_token().secret())
-        .send()
-        .await
-        .map_err(BadRequest)?
-        .json::<User>()
-        .await
-        .map_err(BadRequest)?;
+    let user_data: User = {
+        // Wrapping this in an expression because we only need mutability for a moment
+        let mut ud = client
+            .get(config.userinfo.clone())
+            .bearer_auth(token.access_token().secret())
+            .send()
+            .await
+            .map_err(BadRequest)?
+            .json::<User>()
+            .await
+            .map_err(BadRequest)?;
 
-    let j = client
-        .get(config.userinfo.clone())
-        .bearer_auth(token.access_token().secret())
-        .send()
-        .await
-        .map_err(BadRequest)?;
-    println!("{}", j.text().await.map_err(BadRequest)?);
+        ud.is_superuser = ud
+            .groups
+            .clone()
+            .is_some_and(|g| g.contains(&"authentik Admins".to_string()));
+
+        ud
+    };
 
     // Create a new session filled with user data
     session.set("user", user_data);
@@ -216,7 +218,7 @@ pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
     let mut context = Context::new();
 
     match session.get::<User>("user") {
-        Some(user) if user.is_superuser() => {
+        Some(user) if user.is_superuser => {
             let db = get_db();
 
             let apps: Vec<entity::application::Model> = LocalApp::find()
