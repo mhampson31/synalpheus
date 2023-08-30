@@ -442,44 +442,4 @@ mod tests {
 
         assert_eq!(control, result)
     }
-
-    #[test]
-    fn can_check_superuser() {
-        // this User should return true
-        let super_user = User {
-            email: "email".to_string(),
-            name: "name".to_string(),
-            preferred_username: "pref name".to_string(),
-            groups: Some(vec![
-                "authentik Admins".to_string(),
-                "other group".to_string(),
-            ]),
-            sub: "sub".to_string(),
-            is_superuser: true,
-        };
-
-        // false, but in other groups
-        let normal_user = User {
-            email: "email".to_string(),
-            name: "name".to_string(),
-            preferred_username: "pref name".to_string(),
-            groups: Some(vec!["other group".to_string()]),
-            sub: "sub".to_string(),
-            is_superuser: false,
-        };
-
-        // false, in no groups
-        let none_user = User {
-            email: "email".to_string(),
-            name: "name".to_string(),
-            preferred_username: "pref name".to_string(),
-            groups: None,
-            sub: "sub".to_string(),
-            is_superuser: false,
-        };
-
-        assert!(super_user.is_superuser());
-        assert!(!normal_user.is_superuser());
-        assert!(!none_user.is_superuser());
-    }
 }

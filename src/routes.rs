@@ -215,11 +215,11 @@ pub async fn logout(session: &Session) -> Redirect {
 
 #[handler]
 pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
-    let mut context = Context::new();
-
     match session.get::<User>("user") {
         Some(user) if user.is_superuser => {
             let db = get_db();
+
+            let mut context = Context::new();
 
             let apps: Vec<entity::application::Model> = LocalApp::find()
                 .all(db)
@@ -246,7 +246,7 @@ pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
 mod tests {
     use super::*;
     use crate::tests::load_test_app;
-    use poem::test::TestClient;
+    use poem::{session::CookieSession, test::TestClient};
 
     /* We expect the main index to be generally reachable */
     #[tokio::test]
@@ -277,7 +277,7 @@ mod tests {
             .assert_status(StatusCode::PERMANENT_REDIRECT)
     }
 
-    /* We expect the OAuth redirect URL to respond to, but not handle random, get requests. */
+    /* We expect the OAuth redirect URL to respond to, but not handle, random get requests. */
     #[tokio::test]
     async fn can_reach_redirect() {
         let config = get_config();
