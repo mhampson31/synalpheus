@@ -1,6 +1,7 @@
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use once_cell::sync::{Lazy, OnceCell};
 use poem::{
+    endpoint::StaticFileEndpoint,
     error::{InternalServerError, NotFoundError},
     get,
     http::StatusCode,
@@ -10,6 +11,7 @@ use poem::{
     web::Html,
     Endpoint, EndpointExt, IntoResponse, Result, Route, Server,
 };
+
 use redis::aio::ConnectionManager;
 use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -146,12 +148,20 @@ pub fn get_db() -> &'static DatabaseConnection {
 fn create_app() -> impl Endpoint {
     let redirect_path = get_config().redirect_path.clone();
     Route::new()
+        // static files
+        .at(
+            "static/js/htmx.min.js",
+            StaticFileEndpoint::new("assets/js/htmx.min.js"),
+        )
+        // page routes
         .at("/", get(routes::index))
         .at("/login", get(routes::login))
         .at("/logout", get(routes::logout))
         .at("/local-apps", get(routes::local_apps))
         .at(redirect_path, get(routes::login_authorized))
+        // errors
         .catch_error(four_oh_four)
+        //middleware
         .with(Tracing)
         .with(Csrf::new())
         .with(CatchPanic::new())
