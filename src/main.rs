@@ -7,6 +7,7 @@ use poem::{
     http::StatusCode,
     listener::TcpListener,
     middleware::{CatchPanic, Csrf, Tracing},
+    post,
     session::{CookieConfig, RedisStorage, ServerSession},
     web::Html,
     Endpoint, EndpointExt, IntoResponse, Result, Route, Server,
@@ -158,6 +159,7 @@ fn create_app() -> impl Endpoint {
         .at("/login", get(routes::login))
         .at("/logout", get(routes::logout))
         .at("/local-apps", get(routes::local_apps))
+        .at("/local-apps/add", post(routes::add_local_app))
         .at(redirect_path, get(routes::login_authorized))
         // errors
         .catch_error(four_oh_four)
@@ -305,6 +307,7 @@ enum Source {
 pub struct AppCard {
     icon: String,
     name: String,
+    slug: String,
     group: String,
     description: String,
     launch_url: String,
@@ -318,6 +321,7 @@ impl From<AuthentikApp> for AppCard {
         AppCard {
             icon: app.icon,
             name: app.name,
+            slug: app.slug,
             group: app.group,
             description: app.description,
             launch_url: app.launch_url,
@@ -331,6 +335,7 @@ impl From<entity::application::Model> for AppCard {
         AppCard {
             icon: app.icon.unwrap_or_default(),
             name: app.name,
+            slug: app.slug,
             group: app.group.unwrap_or_default(),
             description: app.description.unwrap_or_default(),
             launch_url: app.launch_url,

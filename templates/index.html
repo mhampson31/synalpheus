@@ -10,7 +10,7 @@
 <div class="container px-4">
     {% if user %}
 
-    <div class="columns is-multiline">
+    <div id="app-list" class="columns is-multiline">
         {% if applications %}
         {% for app in applications %}
         <div class="column is-half-tablet is-one-third-desktop is-one-quarter-widescreen">
@@ -73,7 +73,34 @@
         {% endif %}
 
         {% if user.is_superuser %}
-        <button hx-get="/modal" hx-target="body" hx-swap="beforeend">Open a Modal</button>
+        <form hx-post="/local-apps/add" hx-swap="afterend">
+            <label>
+                App
+                <input name="name" type="text">
+            </label>
+            <label>
+                Slug
+                <input name="slug" type="text">
+            </label>
+            <label>
+                URL
+                <input name="launch_url" type="text">
+            </label>
+            <label>
+                Icon
+                <input name="icon" type="text">
+            </label>
+            <label>
+                Description
+                <input name="description" type="text">
+            </label>
+            <label>
+                Group
+                <input name="group" type="text">
+            </label>
+            <input name="source" type="hidden" value="Local" />
+            <input type="submit" value="Submit">
+        </form>
         {% endif %}
 
     </div>

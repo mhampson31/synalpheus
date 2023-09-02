@@ -7,7 +7,7 @@ use poem::{
     handler,
     http::StatusCode,
     session::Session,
-    web::{Html, Query, Redirect},
+    web::{Form, Html, Query, Redirect},
     IntoResponse, Result,
 };
 use sea_orm::EntityTrait;
@@ -16,7 +16,7 @@ use tera::Context;
 
 use super::{get_config, get_db, get_oauth_client, AppCard, AppResponse, User, TEMPLATES};
 
-use entity::application::Entity as LocalApp;
+use entity::application as LocalApp;
 
 #[derive(Debug, Deserialize)]
 pub struct AuthRequest {
@@ -75,7 +75,7 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
                 /* local applications */
                 let db = get_db();
                 applications.append(
-                    &mut LocalApp::find()
+                    &mut LocalApp::Entity::find()
                         .all(db)
                         .await
                         .map_err(InternalServerError)?
@@ -221,7 +221,7 @@ pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
 
             let mut context = Context::new();
 
-            let apps: Vec<entity::application::Model> = LocalApp::find()
+            let apps: Vec<entity::application::Model> = LocalApp::Entity::find()
                 .all(db)
                 .await
                 .map_err(InternalServerError)?;
@@ -238,6 +238,21 @@ pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
             Ok(Redirect::see_other("/").into_response())
         }
     }
+}
+
+#[handler]
+pub fn add_local_app(
+    Form(AppCard {
+        name,
+        slug,
+        launch_url,
+        icon,
+        description,
+        group,
+        ..
+    }): Form<AppCard>,
+) -> String {
+    format!("{:#?}: {:#?}", name, slug)
 }
 
 /* *** TESTS *** */
