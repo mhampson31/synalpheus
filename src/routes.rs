@@ -10,7 +10,11 @@ use poem::{
     web::{Form, Html, Query, Redirect},
     IntoResponse, Result,
 };
-use sea_orm::EntityTrait;
+use sea_orm::{
+    ActiveModelTrait,
+    ActiveValue::{NotSet, Set},
+    EntityTrait,
+};
 use serde::Deserialize;
 use tera::Context;
 
@@ -241,7 +245,7 @@ pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
 }
 
 #[handler]
-pub fn add_local_app(
+pub async fn add_local_app(
     Form(AppCard {
         name,
         slug,
@@ -251,8 +255,22 @@ pub fn add_local_app(
         group,
         ..
     }): Form<AppCard>,
-) -> String {
-    format!("{:#?}: {:#?}", name, slug)
+) -> StatusCode {
+    let new_app = LocalApp::ActiveModel {
+        //todo: what if these optional fields are blank?
+        name: Set(name),
+        slug: Set(slug),
+        launch_url: Set(launch_url),
+        icon: Set(Some(icon)),
+        description: Set(Some(description)),
+        group: Set(Some(group)),
+        id: NotSet,
+    };
+    let db = get_db();
+    match new_app.insert(db).await {
+        Ok(m) => StatusCode::NO_CONTENT,
+        Err(e) => StatusCode::INTERNAL_SERVER_ERROR,
+    }
 }
 
 /* *** TESTS *** */
