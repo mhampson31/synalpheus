@@ -8,7 +8,7 @@ use poem::{
     http::StatusCode,
     session::Session,
     web::{Form, Html, Query, Redirect},
-    IntoResponse, Result,
+    IntoResponse, Response, Result,
 };
 use sea_orm::{
     ActiveModelTrait,
@@ -28,87 +28,16 @@ pub struct AuthRequest {
     state: CsrfToken,
 }
 
-async fn get_apps(token: String) -> Result<Vec<AppCard>, Error> {
-    let client = reqwest::Client::new();
-
-    let config = get_config();
-
-    let mut response = client
-        .get(config.authentik_api.to_string())
-        .bearer_auth(token.clone())
-        .send()
-        .await
-        .map_err(InternalServerError)?;
-
-    if response.status() == StatusCode::OK {
-        let mut auth_apps = client
-            .get(config.authentik_api.to_string())
-            .bearer_auth(token.clone())
-            .send()
-            .await
-            .map_err(InternalServerError)?
-            .json::<AppResponse>()
-            .await
-            .map_err(InternalServerError)?;
-
-        /* This vec will hold our apps, whether from Authentik or the DB */
-        let mut applications: Vec<AppCard> = Vec::new();
-
-        /* Let's not include this app in the application list */
-        applications.append(
-            &mut auth_apps
-                .results
-                .into_iter()
-                .filter(|app| app.name.to_lowercase() != config.syn_provider.to_lowercase())
-                .map(|a| a.into())
-                .collect(),
-        );
-
-        /* local applications */
-        let db = get_db();
-        applications.append(
-            &mut LocalApp::Entity::find()
-                .all(db)
-                .await
-                .map_err(InternalServerError)?
-                .into_iter()
-                .map(|a| a.into())
-                .collect(),
-        );
-
-        applications.sort_by_key(|app| app.group.clone());
-
-        Ok(applications)
-    } else {
-        Err(Error::from_status(response.status()))
-    }
-}
-
 #[handler]
 pub async fn index(session: &Session) -> Result<impl IntoResponse> {
     let mut context = Context::new();
     if let Some(user) = session.get::<User>("user") {
-        let client = reqwest::Client::new();
+        context.insert("user", &user);
 
-        /* Send the user back to login if we can't get the access token. Is 303 the right code? */
-        let Some(token) = session.get::<String>("access_token") else {return Ok(Redirect::see_other("/login").into_response())};
-
-        match get_apps(token.clone()).await {
-            Ok(applications) => {
-                context.insert("user", &user);
-                context.insert("applications", &applications);
-
-                let response = TEMPLATES
-                    .render("index.html", &context)
-                    .map_err(InternalServerError)?;
-                Ok(Html(response).into_response())
-            }
-            Err(e) => {
-                /* Probably an expired token or something */
-                session.purge();
-                Ok(Redirect::see_other("/login").into_response())
-            }
-        }
+        let response = TEMPLATES
+            .render("index.html", &context)
+            .map_err(InternalServerError)?;
+        Ok(Html(response).into_response())
     } else {
         /* If we get here, there's no User in the session */
         session.purge();
@@ -117,6 +46,72 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
             .map_err(InternalServerError)?;
         Ok(Html(response).into_response())
     }
+}
+
+#[handler]
+pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
+    /* Send the user back to login if we can't get the access token. Is 303 the right code? */
+
+    let mut context = Context::new();
+
+    if let Some(token) = session.get::<String>("access_token") {
+        let client = reqwest::Client::new();
+
+        /* This vec will hold our apps, whether from Authentik or the DB */
+        let mut applications: Vec<AppCard> = Vec::new();
+
+        let config = get_config();
+
+        let mut response = client
+            .get(config.authentik_api.to_string())
+            .bearer_auth(token.clone())
+            .send()
+            .await
+            .map_err(InternalServerError)?;
+
+        if response.status() == StatusCode::OK {
+            let mut auth_apps = client
+                .get(config.authentik_api.to_string())
+                .bearer_auth(token.clone())
+                .send()
+                .await
+                .map_err(InternalServerError)?
+                .json::<AppResponse>()
+                .await
+                .map_err(InternalServerError)?;
+
+            /* Let's not include this app in the application list */
+            applications.append(
+                &mut auth_apps
+                    .results
+                    .into_iter()
+                    .filter(|app| app.name.to_lowercase() != config.syn_provider.to_lowercase())
+                    .map(|a| a.into())
+                    .collect(),
+            );
+
+            /* local applications */
+            let db = get_db();
+            applications.append(
+                &mut LocalApp::Entity::find()
+                    .all(db)
+                    .await
+                    .map_err(InternalServerError)?
+                    .into_iter()
+                    .map(|a| a.into())
+                    .collect(),
+            );
+
+            applications.sort_by_key(|app| app.group.clone());
+        }
+        context.insert("applications", &applications);
+    }
+
+    let response = TEMPLATES
+        .render("app_cards.html", &context)
+        .map_err(InternalServerError)?;
+
+    Ok(Html(response).into_response())
 }
 
 #[handler]
@@ -263,7 +258,7 @@ pub async fn add_local_app(
         group,
         ..
     }): Form<AppCard>,
-) -> StatusCode {
+) -> impl IntoResponse {
     let new_app = LocalApp::ActiveModel {
         //todo: what if these optional fields are blank?
         name: Set(name),
@@ -276,8 +271,13 @@ pub async fn add_local_app(
     };
     let db = get_db();
     match new_app.insert(db).await {
-        Ok(m) => StatusCode::NO_CONTENT,
-        Err(e) => StatusCode::INTERNAL_SERVER_ERROR,
+        Ok(m) => Response::builder()
+            .status(StatusCode::NO_CONTENT)
+            .header("HX-Trigger", "newCard")
+            .body(()),
+        Err(e) => Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body(()),
     }
 }
 

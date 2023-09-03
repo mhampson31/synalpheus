@@ -34,6 +34,7 @@ pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
         ("templates/base.html", Some("base.html")),
         ("templates/index.html", Some("index.html")),
         ("templates/local_apps.html", Some("local_apps.html")),
+        ("templates/app_cards.html", Some("app_cards.html")),
     ])
     .expect("Template files could not be loaded");
 
@@ -160,6 +161,7 @@ fn create_app() -> impl Endpoint {
         .at("/logout", get(routes::logout))
         .at("/local-apps", get(routes::local_apps))
         .at("/local-apps/add", post(routes::add_local_app))
+        .at("/app-cards", get(routes::app_cards))
         .at(redirect_path, get(routes::login_authorized))
         // errors
         .catch_error(four_oh_four)
