@@ -271,11 +271,11 @@ pub async fn add_local_app(
     };
     let db = get_db();
     match new_app.insert(db).await {
-        Ok(m) => Response::builder()
+        Ok(_) => Response::builder()
             .status(StatusCode::NO_CONTENT)
             .header("HX-Trigger", "newCard")
             .body(()),
-        Err(e) => Response::builder()
+        Err(_) => Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .body(()),
     }

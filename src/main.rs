@@ -160,7 +160,7 @@ fn create_app() -> impl Endpoint {
         .at("/login", get(routes::login))
         .at("/logout", get(routes::logout))
         .at("/local-apps", get(routes::local_apps))
-        .at("/local-apps/add", post(routes::add_local_app))
+        .at("/local-apps", post(routes::add_local_app))
         .at("/app-cards", get(routes::app_cards))
         .at(redirect_path, get(routes::login_authorized))
         // errors
