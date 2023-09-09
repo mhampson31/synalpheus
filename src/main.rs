@@ -7,7 +7,6 @@ use poem::{
     http::StatusCode,
     listener::TcpListener,
     middleware::{CatchPanic, Csrf, Tracing},
-    post,
     session::{CookieConfig, RedisStorage, ServerSession},
     web::Html,
     Endpoint, EndpointExt, IntoResponse, Result, Route, Server,
@@ -35,6 +34,11 @@ pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
         ("templates/index.html", Some("index.html")),
         ("templates/local_apps.html", Some("local_apps.html")),
         ("templates/app_cards.html", Some("app_cards.html")),
+        ("templates/admin.html", Some("admin.html")),
+        (
+            "templates/local_app_update.html",
+            Some("local_app_update.html"),
+        ),
     ])
     .expect("Template files could not be loaded");
 
@@ -159,8 +163,16 @@ fn create_app() -> impl Endpoint {
         .at("/", get(routes::index))
         .at("/login", get(routes::login))
         .at("/logout", get(routes::logout))
-        .at("/local-apps", get(routes::local_apps))
-        .at("/local-apps", post(routes::add_local_app))
+        .at("/admin", get(routes::admin))
+        // internal API routes
+        .at(
+            "/local-apps/:id",
+            get(routes::local_app_get).put(routes::local_app_update),
+        )
+        .at(
+            "/local-apps",
+            get(routes::local_apps).post(routes::add_local_app),
+        )
         .at("/app-cards", get(routes::app_cards))
         .at(redirect_path, get(routes::login_authorized))
         // errors

@@ -11,7 +11,7 @@
             height: 2em;
         }
     </style>
-    <script src="static/js/htmx.min.js"></script>
+    <script src="/static/js/htmx.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
 
@@ -67,7 +67,7 @@
                 </div>
 
                 {% if user.is_superuser %}
-                <a class="navbar-item" href="/local-apps">Local Applications</a>
+                <a class="navbar-item" href="/admin">Admin</a>
                 {% endif %}
 
                 {% endif %}

@@ -1,23 +1,35 @@
-{% extends "base.html" %}
-
-{% block title %}Synalpheus{% endblock %}
-
-{% block head %}
-{% endblock %}
-
-{% block content %}
-
-<div class="container px-4">
-    {% if apps %}
-    <div class="columns is-multiline">
-        <ul>
-            {% for app in apps %}
-            <li><a href="{{app.launch_url}}">{{app.name}}</a></li>
+<div id="app-list">
+    {% if applications %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Slug</th>
+                <th>Icon</th>
+                <th>Group</th>
+                <th>Description</th>
+                <th>URL</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody hx-target="closest tr" hx-swap="outerHTML">
+            {% for app in applications %}
+            <tr>
+                <td>{{app.id}}</td>
+                <td>{{app.name}}</td>
+                <td>{{app.slug}}</td>
+                <td>{{app.icon}}</td>
+                <td>{{app.group}}</td>
+                <td>{{app.description}}</td>
+                <td>{{app.launch_url}}</td>
+                <td> <button class="btn btn-danger" hx-get="/local-apps/{{app.id}}" hx-trigger="click" _="on click
+                         trigger edit">
+                        Edit
+                    </button></td>
+            </tr>
             {% endfor %}
-        </ul>
-    </div>
+        </tbody>
+    </table>
     {% endif %}
-
 </div>
-
-{% endblock %}
