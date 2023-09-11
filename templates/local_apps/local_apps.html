@@ -1,6 +1,6 @@
 <div id="app-list">
     {% if applications %}
-    <table class="table">
+    <table class="table is-fullwidth is-hoverable">
         <thead>
             <tr>
                 <th>ID</th>
@@ -23,27 +23,27 @@
                 <td>{{app.group}}</td>
                 <td>{{app.description}}</td>
                 <td>{{app.launch_url}}</td>
-                <td> <button class="btn btn-danger" hx-get="/local-apps/{{app.id}}" hx-trigger="click" _="on click
+                <td> <button class="button is-info" hx-get="/local-apps/{{app.id}}" hx-trigger="click" _="on click
                          trigger edit">
                         Edit
                     </button>
-                    <button class="btn btn-danger" hx-confirm="Delete this app?" hx-delete="/local-apps/{{app.id}}">
+                    <button class="button is-danger" hx-confirm="Delete this app?" hx-delete="/local-apps/{{app.id}}">
                         Delete
                     </button>
                 </td>
             </tr>
             {% endfor %}
             <tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td> <button class="btn btn-danger" hx-get="/local-apps/new">
+                <td><button class="button is-info" hx-get="/local-apps/new">
                         Add
                     </button></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td> </td>
 
             </tr>
         </tbody>

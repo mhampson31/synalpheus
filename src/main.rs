@@ -32,15 +32,18 @@ pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
         ("templates/404.html", Some("404.html")),
         ("templates/base.html", Some("base.html")),
         ("templates/index.html", Some("index.html")),
-        ("templates/local_apps.html", Some("local_apps.html")),
         ("templates/app_cards.html", Some("app_cards.html")),
         ("templates/admin.html", Some("admin.html")),
         (
-            "templates/local_app_update.html",
+            "templates/local_apps/local_apps.html",
+            Some("local_apps.html"),
+        ),
+        (
+            "templates/local_apps/update.html",
             Some("local_app_update.html"),
         ),
         (
-            "templates/local_app_create.html",
+            "templates/local_apps/create.html",
             Some("local_app_create.html"),
         ),
     ])

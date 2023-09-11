@@ -8,10 +8,10 @@
     <td><input name='launch_url' value='{{app.launch_url}}'></td>
     <td>
         <input name="source" type="hidden" value="Local" />
-        <button class="btn btn-danger" hx-trigger="click" hx-get="/local-apps/{{app.id}}">
+        <button class="button is-warning" hx-trigger="click" hx-get="/local-apps/{{app.id}}">
             Cancel
         </button>
-        <button class="btn btn-danger" hx-trigger="click" hx-put="/local-apps/{{app.id}}" hx-include="closest tr">
+        <button class="button is-success" hx-trigger="click" hx-put="/local-apps/{{app.id}}" hx-include="closest tr">
             Save
         </button>
     </td>
