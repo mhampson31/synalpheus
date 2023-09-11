@@ -1,0 +1,18 @@
+<tr hx-trigger='cancel' class='editing'>
+    <td></td>
+    <td><input name='name'></td>
+    <td><input name='slug'></td>
+    <td><input name='icon'></td>
+    <td><input name='group'></td>
+    <td><input name='description'></td>
+    <td><input name='launch_url'></td>
+    <td>
+        <input name="source" type="hidden" value="Local" />
+        <button class="btn btn-danger" hx-trigger="click">
+            Cancel
+        </button>
+        <button class="btn btn-danger" hx-trigger="click" hx-post="/local-apps" hx-include="closest tr">
+            Save
+        </button>
+    </td>
+</tr>

@@ -12,41 +12,6 @@
     <div hx-get="/local-apps" hx-trigger="load,newApp from:body">
     </div>
 
-    <form class="card" hx-post="/local-apps" hx-swap="afterend">
-        <div class="card-header">
-            <label class="label">App</label>
-            <div class="control">
-                <input name="name" type="text">
-            </div>
-
-            <label class="label">Group</label>
-            <div class="control">
-                <input name="group" type="text">
-            </div>
-        </div>
-
-        <label class="label">Slug</label>
-        <div class="control"><input name="slug" type="text"></div>
-
-        <label class="label">URL</label>
-        <div class="control"><input name="launch_url" type="text"></div>
-
-        <label class="label">Icon</label>
-        <div class="control"> <input name="icon" type="text"></div>
-
-        <label class="label">Description</label>
-        <div class="control"> <input name="description" type="text"></div>
-
-        <div class="control"> <input name="source" type="hidden" value="Local" /></div>
-        <p class="control">
-            <a class="button is-primary">
-                Submit
-            </a>
-        </p>
-    </form>
-
-
-
 </div>
 
 {% endblock %}
