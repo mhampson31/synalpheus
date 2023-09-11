@@ -1,0 +1,16 @@
+<tr>
+    <td>{{app.id}}</td>
+    <td>{{app.name}}</td>
+    <td>{{app.slug}}</td>
+    <td>{{app.icon}}</td>
+    <td>{{app.group}}</td>
+    <td>{{app.description}}</td>
+    <td>{{app.launch_url}}</td>
+    <td> <button class="button is-info" hx-get="/local-apps/{{app.id}}/edit" hx-trigger="click" _="on click
+             trigger edit">
+            Edit
+        </button>
+        <button class="delete" hx-confirm="Delete this app?" hx-delete="/local-apps/{{app.id}}">
+        </button>
+    </td>
+</tr>

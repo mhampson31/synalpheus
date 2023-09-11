@@ -39,12 +39,16 @@ pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
             Some("local_apps.html"),
         ),
         (
-            "templates/local_apps/update.html",
-            Some("local_app_update.html"),
-        ),
-        (
             "templates/local_apps/create.html",
             Some("local_app_create.html"),
+        ),
+        (
+            "templates/local_apps/read.html",
+            Some("local_app_read.html"),
+        ),
+        (
+            "templates/local_apps/update.html",
+            Some("local_app_update.html"),
         ),
     ])
     .expect("Template files could not be loaded");
@@ -174,10 +178,11 @@ fn create_app() -> impl Endpoint {
         // internal API routes
         .at(
             "/local-apps/:id",
-            get(routes::local_app_get)
+            get(routes::local_app_read)
                 .put(routes::local_app_update)
                 .delete(routes::local_app_delete),
         )
+        .at("/local-apps/:1/edit", get(routes::local_app_edit))
         .at("/local-apps/new", get(routes::local_app_new))
         .at(
             "/local-apps",

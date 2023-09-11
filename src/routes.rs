@@ -268,7 +268,7 @@ pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
 }
 
 #[handler]
-pub async fn local_app_get(session: &Session, id: Path<u8>) -> Result<impl IntoResponse> {
+pub async fn local_app_edit(session: &Session, id: Path<u8>) -> Result<impl IntoResponse> {
     match session.get::<User>("user") {
         Some(user) if user.is_superuser => {
             let db = get_db();
@@ -307,6 +307,36 @@ pub async fn local_app_new(session: &Session) -> Result<impl IntoResponse> {
                 .render("local_app_create.html", &context)
                 .map_err(InternalServerError)?;
             Ok(Html(response).into_response())
+        }
+        _ => {
+            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
+            Ok(Response::builder().status(StatusCode::FORBIDDEN).body(()))
+        }
+    }
+}
+
+#[handler]
+pub async fn local_app_read(session: &Session, id: Path<u8>) -> Result<impl IntoResponse> {
+    match session.get::<User>("user") {
+        Some(user) if user.is_superuser => {
+            let db = get_db();
+
+            let mut context = Context::new();
+
+            if let Some(app) = LocalApp::Entity::find_by_id(id.0)
+                .one(db)
+                .await
+                .map_err(InternalServerError)?
+            {
+                context.insert("app", &app);
+
+                let response = TEMPLATES
+                    .render("local_app_read.html", &context)
+                    .map_err(InternalServerError)?;
+                Ok(Html(response).into_response())
+            } else {
+                Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
+            }
         }
         _ => {
             /* If we get here, either the visitor isn't logged-in or isn't a superuser */

@@ -8,10 +8,7 @@
     <td><input name='launch_url'></td>
     <td>
         <input name="source" type="hidden" value="Local" />
-        <button class="btn btn-danger" hx-trigger="click">
-            Cancel
-        </button>
-        <button class="btn btn-danger" hx-trigger="click" hx-post="/local-apps" hx-include="closest tr">
+        <button class="button is-success" hx-trigger="click" hx-post="/local-apps" hx-include="closest tr">
             Save
         </button>
     </td>
