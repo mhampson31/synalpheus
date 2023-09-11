@@ -324,6 +324,35 @@ pub async fn local_app_update(
 }
 
 #[handler]
+pub async fn local_app_delete(session: &Session, id: Path<u8>) -> Result<impl IntoResponse> {
+    match session.get::<User>("user") {
+        Some(user) if user.is_superuser => {
+            let db = get_db();
+            let mut context = Context::new();
+
+            if let Some(app) = LocalApp::Entity::find_by_id(id.0)
+                .one(db)
+                .await
+                .map_err(InternalServerError)?
+            {
+                LocalApp::Entity::delete_by_id(id.0)
+                    .exec(db)
+                    .await
+                    .map_err(InternalServerError)?;
+
+                Ok(Response::builder().status(StatusCode::OK).body(()))
+            } else {
+                Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
+            }
+        }
+        _ => {
+            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
+            Ok(Response::builder().status(StatusCode::FORBIDDEN).body(()))
+        }
+    }
+}
+
+#[handler]
 pub async fn admin(session: &Session) -> Result<impl IntoResponse> {
     match session.get::<User>("user") {
         Some(user) if user.is_superuser => {

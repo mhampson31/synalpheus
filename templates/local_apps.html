@@ -26,7 +26,11 @@
                 <td> <button class="btn btn-danger" hx-get="/local-apps/{{app.id}}" hx-trigger="click" _="on click
                          trigger edit">
                         Edit
-                    </button></td>
+                    </button>
+                    <button class="btn btn-danger" hx-confirm="Delete this app?" hx-delete="/local-apps/{{app.id}}">
+                        Delete
+                    </button>
+                </td>
             </tr>
             {% endfor %}
         </tbody>

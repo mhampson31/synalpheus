@@ -167,7 +167,9 @@ fn create_app() -> impl Endpoint {
         // internal API routes
         .at(
             "/local-apps/:id",
-            get(routes::local_app_get).put(routes::local_app_update),
+            get(routes::local_app_get)
+                .put(routes::local_app_update)
+                .delete(routes::local_app_delete),
         )
         .at(
             "/local-apps",
