@@ -1,7 +1,7 @@
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use once_cell::sync::{Lazy, OnceCell};
 use poem::{
-    endpoint::StaticFileEndpoint,
+    endpoint::{StaticFileEndpoint, StaticFilesEndpoint},
     error::{InternalServerError, NotFoundError},
     get,
     http::StatusCode,
@@ -169,6 +169,10 @@ fn create_app() -> impl Endpoint {
         .at(
             "static/js/htmx.min.js",
             StaticFileEndpoint::new("assets/js/htmx.min.js"),
+        )
+        .at(
+            "static/images/edit.svg",
+            StaticFileEndpoint::new("assets/images/edit.svg"),
         )
         // page routes
         .at("/", get(routes::index))
