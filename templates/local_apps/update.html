@@ -1,11 +1,11 @@
 <tr hx-trigger='cancel' class='editing' hx-get="/local-apps/{{app.id}}">
     <td>{{app.id}}</td>
-    <td><input name='name' value='{{app.name}}'></td>
-    <td><input name='slug' value='{{app.slug}}'></td>
-    <td><input name='icon' value='{{app.icon}}'></td>
-    <td><input name='group' value='{{app.group}}'></td>
-    <td><input name='description' value='{{app.description}}'></td>
-    <td><input name='launch_url' value='{{app.launch_url}}'></td>
+    <td><input name='name' class='input' value='{{app.name}}'></td>
+    <td><input name='slug' class='input' value='{{app.slug}}'></td>
+    <td><input name='icon' class='input' value='{{app.icon}}'></td>
+    <td><input name='group' class='input' value='{{app.group}}'></td>
+    <td><input name='description' class='input' value='{{app.description}}'></td>
+    <td><input name='launch_url' class='input' value='{{app.launch_url}}'></td>
     <td>
         <input name="source" type="hidden" value="Local" />
         <button class="button is-warning" hx-trigger="click" hx-get="/local-apps/{{app.id}}">
