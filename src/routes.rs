@@ -7,16 +7,20 @@ use poem::{
     handler,
     http::StatusCode,
     session::Session,
-    web::{Html, Query, Redirect},
-    IntoResponse, Result,
+    web::{Form, Html, Path, Query, Redirect},
+    IntoResponse, Response, Result,
 };
-use sea_orm::EntityTrait;
+use sea_orm::{
+    ActiveModelTrait,
+    ActiveValue::{NotSet, Set},
+    EntityTrait, QueryOrder,
+};
 use serde::Deserialize;
 use tera::Context;
 
 use super::{get_config, get_db, get_oauth_client, AppCard, AppResponse, User, TEMPLATES};
 
-use entity::application::Entity as LocalApp;
+use entity::application as LocalApp;
 
 #[derive(Debug, Deserialize)]
 pub struct AuthRequest {
@@ -28,10 +32,33 @@ pub struct AuthRequest {
 pub async fn index(session: &Session) -> Result<impl IntoResponse> {
     let mut context = Context::new();
     if let Some(user) = session.get::<User>("user") {
+        context.insert("user", &user);
+
+        let response = TEMPLATES
+            .render("index.html", &context)
+            .map_err(InternalServerError)?;
+        Ok(Html(response).into_response())
+    } else {
+        /* If we get here, there's no User in the session */
+        session.purge();
+        let response = TEMPLATES
+            .render("index.html", &context)
+            .map_err(InternalServerError)?;
+        Ok(Html(response).into_response())
+    }
+}
+
+#[handler]
+pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
+    /* Send the user back to login if we can't get the access token. Is 303 the right code? */
+
+    let mut context = Context::new();
+
+    if let Some(token) = session.get::<String>("access_token") {
         let client = reqwest::Client::new();
 
-        /* Send the user back to login if we can't get the access token. Is 303 the right code? */
-        let Some(token) = session.get::<String>("access_token") else {return Ok(Redirect::see_other("/login").into_response())};
+        /* This vec will hold our apps, whether from Authentik or the DB */
+        let mut applications: Vec<AppCard> = Vec::new();
 
         let config = get_config();
 
@@ -42,69 +69,49 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
             .await
             .map_err(InternalServerError)?;
 
-        match response.status() {
-            StatusCode::FORBIDDEN => {
-                /* Probably an expired token or something */
-                session.purge();
-                Ok(Redirect::see_other("/login").into_response())
-            }
-            StatusCode::OK => {
-                let mut auth_apps = client
-                    .get(config.authentik_api.to_string())
-                    .bearer_auth(token.clone())
-                    .send()
+        if response.status() == StatusCode::OK {
+            let mut auth_apps = client
+                .get(config.authentik_api.to_string())
+                .bearer_auth(token.clone())
+                .send()
+                .await
+                .map_err(InternalServerError)?
+                .json::<AppResponse>()
+                .await
+                .map_err(InternalServerError)?;
+
+            /* Let's not include this app in the application list */
+            applications.append(
+                &mut auth_apps
+                    .results
+                    .into_iter()
+                    .filter(|app| app.name.to_lowercase() != config.syn_provider.to_lowercase())
+                    .map(|a| a.into())
+                    .collect(),
+            );
+
+            /* local applications */
+            let db = get_db();
+            applications.append(
+                &mut LocalApp::Entity::find()
+                    .all(db)
                     .await
                     .map_err(InternalServerError)?
-                    .json::<AppResponse>()
-                    .await
-                    .map_err(InternalServerError)?;
+                    .into_iter()
+                    .map(|a| a.into())
+                    .collect(),
+            );
 
-                /* This vec will hold our apps, whether from Authentik or the DB */
-                let mut applications: Vec<AppCard> = Vec::new();
-
-                /* Let's not include this app in the application list */
-                applications.append(
-                    &mut auth_apps
-                        .results
-                        .into_iter()
-                        .filter(|app| app.name.to_lowercase() != config.syn_provider.to_lowercase())
-                        .map(|a| a.into())
-                        .collect(),
-                );
-
-                /* local applications */
-                let db = get_db();
-                applications.append(
-                    &mut LocalApp::find()
-                        .all(db)
-                        .await
-                        .map_err(InternalServerError)?
-                        .into_iter()
-                        .map(|a| a.into())
-                        .collect(),
-                );
-
-                applications.sort_by_key(|app| app.group.clone());
-
-                context.insert("user", &user);
-                context.insert("applications", &applications);
-
-                let response = TEMPLATES
-                    .render("index.html", &context)
-                    .map_err(InternalServerError)?;
-                Ok(Html(response).into_response())
-            }
-            /* This last case needs improving, but will do for now */
-            _ => Ok(Redirect::see_other("/login").into_response()),
+            applications.sort_by_key(|app| app.group.clone());
         }
-    } else {
-        /* If we get here, there's no User in the session */
-        session.purge();
-        let response = TEMPLATES
-            .render("index.html", &context)
-            .map_err(InternalServerError)?;
-        Ok(Html(response).into_response())
+        context.insert("applications", &applications);
     }
+
+    let response = TEMPLATES
+        .render("app_cards.html", &context)
+        .map_err(InternalServerError)?;
+
+    Ok(Html(response).into_response())
 }
 
 #[handler]
@@ -178,23 +185,25 @@ pub async fn login_authorized(
 
     let client = reqwest::Client::new();
 
-    let user_data: User = client
-        .get(config.userinfo.clone())
-        .bearer_auth(token.access_token().secret())
-        .send()
-        .await
-        .map_err(BadRequest)?
-        .json::<User>()
-        .await
-        .map_err(BadRequest)?;
+    let user_data: User = {
+        // Wrapping this in an expression because we only need mutability for a moment
+        let mut ud = client
+            .get(config.userinfo.clone())
+            .bearer_auth(token.access_token().secret())
+            .send()
+            .await
+            .map_err(BadRequest)?
+            .json::<User>()
+            .await
+            .map_err(BadRequest)?;
 
-    let j = client
-        .get(config.userinfo.clone())
-        .bearer_auth(token.access_token().secret())
-        .send()
-        .await
-        .map_err(BadRequest)?;
-    println!("{}", j.text().await.map_err(BadRequest)?);
+        ud.is_superuser = ud
+            .groups
+            .clone()
+            .is_some_and(|g| g.contains(&"authentik Admins".to_string()));
+
+        ud
+    };
 
     // Create a new session filled with user data
     session.set("user", user_data);
@@ -212,19 +221,39 @@ pub async fn logout(session: &Session) -> Redirect {
 }
 
 #[handler]
-pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
-    let mut context = Context::new();
-
+pub async fn admin(session: &Session) -> Result<impl IntoResponse> {
     match session.get::<User>("user") {
-        Some(user) if user.is_superuser() => {
+        Some(user) if user.is_superuser => {
+            let mut context = Context::new();
+            context.insert("user", &user);
+
+            let response = TEMPLATES
+                .render("admin.html", &context)
+                .map_err(InternalServerError)?;
+            Ok(Html(response).into_response())
+        }
+        _ => {
+            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
+            Ok(Redirect::see_other("/").into_response())
+        }
+    }
+}
+
+#[handler]
+pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
+    match session.get::<User>("user") {
+        Some(user) if user.is_superuser => {
             let db = get_db();
 
-            let apps: Vec<entity::application::Model> = LocalApp::find()
+            let mut context = Context::new();
+
+            let apps: Vec<entity::application::Model> = LocalApp::Entity::find()
+                .order_by_asc(LocalApp::Column::Id)
                 .all(db)
                 .await
                 .map_err(InternalServerError)?;
 
-            context.insert("apps", &apps);
+            context.insert("applications", &apps);
 
             let response = TEMPLATES
                 .render("local_apps.html", &context)
@@ -238,13 +267,203 @@ pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
     }
 }
 
+#[handler]
+pub async fn local_app_create(
+    Form(AppCard {
+        name,
+        slug,
+        launch_url,
+        icon,
+        description,
+        group,
+        ..
+    }): Form<AppCard>,
+) -> impl IntoResponse {
+    let new_app = LocalApp::ActiveModel {
+        //todo: what if these optional fields are blank?
+        name: Set(name),
+        slug: Set(slug),
+        launch_url: Set(launch_url),
+        icon: Set(Some(icon)),
+        description: Set(Some(description)),
+        group: Set(Some(group)),
+        id: NotSet,
+    };
+    let db = get_db();
+    match new_app.insert(db).await {
+        Ok(_) => Response::builder()
+            .status(StatusCode::NO_CONTENT)
+            .header("HX-Trigger", "newApp")
+            .body(()),
+        Err(_) => Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body(()),
+    }
+}
+
+#[handler]
+pub async fn local_app_edit(session: &Session, id: Path<u8>) -> Result<impl IntoResponse> {
+    match session.get::<User>("user") {
+        Some(user) if user.is_superuser => {
+            let db = get_db();
+
+            let mut context = Context::new();
+
+            if let Some(app) = LocalApp::Entity::find_by_id(id.0)
+                .one(db)
+                .await
+                .map_err(InternalServerError)?
+            {
+                context.insert("app", &app);
+
+                let response = TEMPLATES
+                    .render("local_app_update.html", &context)
+                    .map_err(InternalServerError)?;
+                Ok(Html(response).into_response())
+            } else {
+                Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
+            }
+        }
+        _ => {
+            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
+            Ok(Response::builder().status(StatusCode::FORBIDDEN).body(()))
+        }
+    }
+}
+
+#[handler]
+pub async fn local_app_new(session: &Session) -> Result<impl IntoResponse> {
+    match session.get::<User>("user") {
+        Some(user) if user.is_superuser => {
+            let mut context = Context::new();
+
+            let response = TEMPLATES
+                .render("local_app_create.html", &context)
+                .map_err(InternalServerError)?;
+            Ok(Html(response).into_response())
+        }
+        _ => {
+            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
+            Ok(Response::builder().status(StatusCode::FORBIDDEN).body(()))
+        }
+    }
+}
+
+#[handler]
+pub async fn local_app_read(session: &Session, id: Path<u8>) -> Result<impl IntoResponse> {
+    match session.get::<User>("user") {
+        Some(user) if user.is_superuser => {
+            let db = get_db();
+
+            let mut context = Context::new();
+
+            if let Some(app) = LocalApp::Entity::find_by_id(id.0)
+                .one(db)
+                .await
+                .map_err(InternalServerError)?
+            {
+                context.insert("app", &app);
+
+                let response = TEMPLATES
+                    .render("local_app_read.html", &context)
+                    .map_err(InternalServerError)?;
+                Ok(Html(response).into_response())
+            } else {
+                Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
+            }
+        }
+        _ => {
+            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
+            Ok(Response::builder().status(StatusCode::FORBIDDEN).body(()))
+        }
+    }
+}
+
+#[handler]
+pub async fn local_app_update(
+    session: &Session,
+    id: Path<u8>,
+    Form(AppCard {
+        name,
+        slug,
+        launch_url,
+        icon,
+        description,
+        group,
+        ..
+    }): Form<AppCard>,
+) -> Result<impl IntoResponse> {
+    match session.get::<User>("user") {
+        Some(user) if user.is_superuser => {
+            let db = get_db();
+
+            let mut context = Context::new();
+
+            if let Some(app) = LocalApp::Entity::find_by_id(id.0)
+                .one(db)
+                .await
+                .map_err(InternalServerError)?
+            {
+                let mut app: LocalApp::ActiveModel = app.into();
+                app.name = Set(name);
+                app.slug = Set(slug);
+                app.launch_url = Set(launch_url);
+                app.icon = Set(Some(icon));
+                app.description = Set(Some(description));
+                app.group = Set(Some(group));
+
+                let app: LocalApp::Model = app.update(db).await.map_err(InternalServerError)?;
+
+                context.insert("app", &app);
+                let response = TEMPLATES
+                    .render("local_app_read.html", &context)
+                    .map_err(InternalServerError)?;
+                Ok(Html(response).into_response())
+            } else {
+                Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
+            }
+        }
+        _ => {
+            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
+            Ok(Response::builder().status(StatusCode::FORBIDDEN).body(()))
+        }
+    }
+}
+
+#[handler]
+pub async fn local_app_delete(session: &Session, id: Path<u8>) -> Result<impl IntoResponse> {
+    match session.get::<User>("user") {
+        Some(user) if user.is_superuser => {
+            let db = get_db();
+
+            /* delete_by_id returns a struct with a rows_affected count. If that's 0, the app wasn't deleted.
+             * If more than 1, something weird happened. */
+            let status = match LocalApp::Entity::delete_by_id(id.0)
+                .exec(db)
+                .await
+                .map_err(InternalServerError)?
+                .rows_affected
+            {
+                0 => StatusCode::NOT_FOUND,
+                1 => StatusCode::OK,
+                _ => StatusCode::INTERNAL_SERVER_ERROR,
+            };
+            Ok(Response::builder().status(status).body(()))
+        }
+        _ => {
+            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
+            Ok(Response::builder().status(StatusCode::FORBIDDEN).body(()))
+        }
+    }
+}
+
 /* *** TESTS *** */
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::tests::load_test_app;
-    use poem::test::TestClient;
+    use poem::{session::CookieSession, test::TestClient};
 
     /* We expect the main index to be generally reachable */
     #[tokio::test]
@@ -275,7 +494,7 @@ mod tests {
             .assert_status(StatusCode::PERMANENT_REDIRECT)
     }
 
-    /* We expect the OAuth redirect URL to respond to, but not handle random, get requests. */
+    /* We expect the OAuth redirect URL to respond to, but not handle, random get requests. */
     #[tokio::test]
     async fn can_reach_redirect() {
         let config = get_config();

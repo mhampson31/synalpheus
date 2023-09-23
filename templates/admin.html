@@ -8,15 +8,9 @@
 {% block content %}
 
 <div class="container px-4">
-    {% if user %}
-    <div hx-get="/app-cards" hx-trigger="load,newCard from:body">
-    </div>
-</div>
-</div>
 
-{% else %}
-Not logged in
-{% endif %}
+    <div id="local-apps" hx-get="/local-apps" hx-trigger="load,newApp from:body">
+    </div>
 
 </div>
 

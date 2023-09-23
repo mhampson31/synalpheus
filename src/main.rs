@@ -1,6 +1,7 @@
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use once_cell::sync::{Lazy, OnceCell};
 use poem::{
+    endpoint::{StaticFileEndpoint, StaticFilesEndpoint},
     error::{InternalServerError, NotFoundError},
     get,
     http::StatusCode,
@@ -10,6 +11,7 @@ use poem::{
     web::Html,
     Endpoint, EndpointExt, IntoResponse, Result, Route, Server,
 };
+
 use redis::aio::ConnectionManager;
 use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -30,7 +32,24 @@ pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
         ("templates/404.html", Some("404.html")),
         ("templates/base.html", Some("base.html")),
         ("templates/index.html", Some("index.html")),
-        ("templates/local_apps.html", Some("local_apps.html")),
+        ("templates/app_cards.html", Some("app_cards.html")),
+        ("templates/admin.html", Some("admin.html")),
+        (
+            "templates/local_apps/local_apps.html",
+            Some("local_apps.html"),
+        ),
+        (
+            "templates/local_apps/create.html",
+            Some("local_app_create.html"),
+        ),
+        (
+            "templates/local_apps/read.html",
+            Some("local_app_read.html"),
+        ),
+        (
+            "templates/local_apps/update.html",
+            Some("local_app_update.html"),
+        ),
     ])
     .expect("Template files could not be loaded");
 
@@ -146,12 +165,38 @@ pub fn get_db() -> &'static DatabaseConnection {
 fn create_app() -> impl Endpoint {
     let redirect_path = get_config().redirect_path.clone();
     Route::new()
+        // static files
+        .at(
+            "static/js/htmx.min.js",
+            StaticFileEndpoint::new("assets/js/htmx.min.js"),
+        )
+        .at(
+            "static/images/edit.svg",
+            StaticFileEndpoint::new("assets/images/edit.svg"),
+        )
+        // page routes
         .at("/", get(routes::index))
         .at("/login", get(routes::login))
         .at("/logout", get(routes::logout))
-        .at("/local-apps", get(routes::local_apps))
+        .at("/admin", get(routes::admin))
+        // internal API routes
+        .at(
+            "/local-apps/:id",
+            get(routes::local_app_read)
+                .put(routes::local_app_update)
+                .delete(routes::local_app_delete),
+        )
+        .at("/local-apps/:1/edit", get(routes::local_app_edit))
+        .at("/local-apps/new", get(routes::local_app_new))
+        .at(
+            "/local-apps",
+            get(routes::local_apps).post(routes::local_app_create),
+        )
+        .at("/app-cards", get(routes::app_cards))
         .at(redirect_path, get(routes::login_authorized))
+        // errors
         .catch_error(four_oh_four)
+        //middleware
         .with(Tracing)
         .with(Csrf::new())
         .with(CatchPanic::new())
@@ -230,21 +275,11 @@ fn get_oauth_client() -> BasicClient {
 struct User {
     email: String,
     name: String,
-    //#[serde(rename(deserialize = "preferred_username"))]
     preferred_username: String,
     groups: Option<Vec<String>>,
     sub: String,
-}
-
-impl User {
-    fn is_superuser(&self) -> bool {
-        /* Checks if the user is in Authentik's admin group.
-         * The core/user/me endpoint does have an is_superuser value, but we don't build the User from that.
-         * Todo: configure this group in .env */
-        self.groups
-            .clone()
-            .is_some_and(|g| g.contains(&"authentik Admins".to_string()))
-    }
+    #[serde(default)]
+    is_superuser: bool,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -305,6 +340,7 @@ enum Source {
 pub struct AppCard {
     icon: String,
     name: String,
+    slug: String,
     group: String,
     description: String,
     launch_url: String,
@@ -318,6 +354,7 @@ impl From<AuthentikApp> for AppCard {
         AppCard {
             icon: app.icon,
             name: app.name,
+            slug: app.slug,
             group: app.group,
             description: app.description,
             launch_url: app.launch_url,
@@ -331,6 +368,7 @@ impl From<entity::application::Model> for AppCard {
         AppCard {
             icon: app.icon.unwrap_or_default(),
             name: app.name,
+            slug: app.slug,
             group: app.group.unwrap_or_default(),
             description: app.description.unwrap_or_default(),
             launch_url: app.launch_url,
@@ -451,42 +489,5 @@ mod tests {
         let result: IconURLTester = serde_json::from_str(data).unwrap();
 
         assert_eq!(control, result)
-    }
-
-    #[test]
-    fn can_check_superuser() {
-        // this User should return true
-        let super_user = User {
-            email: "email".to_string(),
-            name: "name".to_string(),
-            preferred_username: "pref name".to_string(),
-            groups: Some(vec![
-                "authentik Admins".to_string(),
-                "other group".to_string(),
-            ]),
-            sub: "sub".to_string(),
-        };
-
-        // false, but in other groups
-        let normal_user = User {
-            email: "email".to_string(),
-            name: "name".to_string(),
-            preferred_username: "pref name".to_string(),
-            groups: Some(vec!["other group".to_string()]),
-            sub: "sub".to_string(),
-        };
-
-        // false, in no groups
-        let none_user = User {
-            email: "email".to_string(),
-            name: "name".to_string(),
-            preferred_username: "pref name".to_string(),
-            groups: None,
-            sub: "sub".to_string(),
-        };
-
-        assert!(super_user.is_superuser());
-        assert!(!normal_user.is_superuser());
-        assert!(!none_user.is_superuser());
     }
 }
