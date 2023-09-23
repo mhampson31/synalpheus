@@ -268,6 +268,40 @@ pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
 }
 
 #[handler]
+pub async fn local_app_create(
+    Form(AppCard {
+        name,
+        slug,
+        launch_url,
+        icon,
+        description,
+        group,
+        ..
+    }): Form<AppCard>,
+) -> impl IntoResponse {
+    let new_app = LocalApp::ActiveModel {
+        //todo: what if these optional fields are blank?
+        name: Set(name),
+        slug: Set(slug),
+        launch_url: Set(launch_url),
+        icon: Set(Some(icon)),
+        description: Set(Some(description)),
+        group: Set(Some(group)),
+        id: NotSet,
+    };
+    let db = get_db();
+    match new_app.insert(db).await {
+        Ok(_) => Response::builder()
+            .status(StatusCode::NO_CONTENT)
+            .header("HX-Trigger", "newApp")
+            .body(()),
+        Err(_) => Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body(()),
+    }
+}
+
+#[handler]
 pub async fn local_app_edit(session: &Session, id: Path<u8>) -> Result<impl IntoResponse> {
     match session.get::<User>("user") {
         Some(user) if user.is_superuser => {
@@ -363,6 +397,8 @@ pub async fn local_app_update(
         Some(user) if user.is_superuser => {
             let db = get_db();
 
+            let mut context = Context::new();
+
             if let Some(app) = LocalApp::Entity::find_by_id(id.0)
                 .one(db)
                 .await
@@ -376,8 +412,13 @@ pub async fn local_app_update(
                 app.description = Set(Some(description));
                 app.group = Set(Some(group));
 
-                let _app: LocalApp::Model = app.update(db).await.map_err(InternalServerError)?;
-                Ok(Response::builder().status(StatusCode::OK).body(()))
+                let app: LocalApp::Model = app.update(db).await.map_err(InternalServerError)?;
+
+                context.insert("app", &app);
+                let response = TEMPLATES
+                    .render("local_app_read.html", &context)
+                    .map_err(InternalServerError)?;
+                Ok(Html(response).into_response())
             } else {
                 Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
             }
@@ -413,40 +454,6 @@ pub async fn local_app_delete(session: &Session, id: Path<u8>) -> Result<impl In
             /* If we get here, either the visitor isn't logged-in or isn't a superuser */
             Ok(Response::builder().status(StatusCode::FORBIDDEN).body(()))
         }
-    }
-}
-
-#[handler]
-pub async fn local_app_create(
-    Form(AppCard {
-        name,
-        slug,
-        launch_url,
-        icon,
-        description,
-        group,
-        ..
-    }): Form<AppCard>,
-) -> impl IntoResponse {
-    let new_app = LocalApp::ActiveModel {
-        //todo: what if these optional fields are blank?
-        name: Set(name),
-        slug: Set(slug),
-        launch_url: Set(launch_url),
-        icon: Set(Some(icon)),
-        description: Set(Some(description)),
-        group: Set(Some(group)),
-        id: NotSet,
-    };
-    let db = get_db();
-    match new_app.insert(db).await {
-        Ok(_) => Response::builder()
-            .status(StatusCode::NO_CONTENT)
-            .header("HX-Trigger", "newApp")
-            .body(()),
-        Err(_) => Response::builder()
-            .status(StatusCode::INTERNAL_SERVER_ERROR)
-            .body(()),
     }
 }
 
