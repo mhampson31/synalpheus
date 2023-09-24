@@ -1,7 +1,7 @@
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use once_cell::sync::{Lazy, OnceCell};
 use poem::{
-    endpoint::{StaticFileEndpoint, StaticFilesEndpoint},
+    endpoint::StaticFileEndpoint,
     error::{InternalServerError, NotFoundError},
     get,
     http::StatusCode,
@@ -20,6 +20,7 @@ use tera::{Context, Tera};
 use url::Url;
 
 mod data;
+mod middleware;
 mod routes;
 
 pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
@@ -178,19 +179,28 @@ fn create_app() -> impl Endpoint {
         .at("/", get(routes::index))
         .at("/login", get(routes::login))
         .at("/logout", get(routes::logout))
-        .at("/admin", get(routes::admin))
+        .at("/admin", get(routes::admin).with(middleware::RequireAdmin))
         // internal API routes
         .at(
             "/local-apps/:id",
             get(routes::local_app_read)
                 .put(routes::local_app_update)
-                .delete(routes::local_app_delete),
+                .delete(routes::local_app_delete)
+                .with(middleware::RequireAdmin),
         )
-        .at("/local-apps/:1/edit", get(routes::local_app_edit))
-        .at("/local-apps/new", get(routes::local_app_new))
+        .at(
+            "/local-apps/:1/edit",
+            get(routes::local_app_edit).with(middleware::RequireAdmin),
+        )
+        .at(
+            "/local-apps/new",
+            get(routes::local_app_new).with(middleware::RequireAdmin),
+        )
         .at(
             "/local-apps",
-            get(routes::local_apps).post(routes::local_app_create),
+            get(routes::local_apps)
+                .post(routes::local_app_create)
+                .with(middleware::RequireAdmin),
         )
         .at("/app-cards", get(routes::app_cards))
         .at(redirect_path, get(routes::login_authorized))

@@ -223,7 +223,7 @@ pub async fn logout(session: &Session) -> Redirect {
 #[handler]
 pub async fn admin(session: &Session) -> Result<impl IntoResponse> {
     match session.get::<User>("user") {
-        Some(user) if user.is_superuser => {
+        Some(user) => {
             let mut context = Context::new();
             context.insert("user", &user);
 
@@ -233,38 +233,30 @@ pub async fn admin(session: &Session) -> Result<impl IntoResponse> {
             Ok(Html(response).into_response())
         }
         _ => {
-            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
+            /* Not technically reachable if our middleware is working */
             Ok(Redirect::see_other("/").into_response())
         }
     }
 }
 
 #[handler]
-pub async fn local_apps(session: &Session) -> Result<impl IntoResponse> {
-    match session.get::<User>("user") {
-        Some(user) if user.is_superuser => {
-            let db = get_db();
+pub async fn local_apps() -> Result<impl IntoResponse> {
+    let db = get_db();
 
-            let mut context = Context::new();
+    let mut context = Context::new();
 
-            let apps: Vec<entity::application::Model> = LocalApp::Entity::find()
-                .order_by_asc(LocalApp::Column::Id)
-                .all(db)
-                .await
-                .map_err(InternalServerError)?;
+    let apps: Vec<entity::application::Model> = LocalApp::Entity::find()
+        .order_by_asc(LocalApp::Column::Id)
+        .all(db)
+        .await
+        .map_err(InternalServerError)?;
 
-            context.insert("applications", &apps);
+    context.insert("applications", &apps);
 
-            let response = TEMPLATES
-                .render("local_apps.html", &context)
-                .map_err(InternalServerError)?;
-            Ok(Html(response).into_response())
-        }
-        _ => {
-            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
-            Ok(Redirect::see_other("/").into_response())
-        }
-    }
+    let response = TEMPLATES
+        .render("local_apps.html", &context)
+        .map_err(InternalServerError)?;
+    Ok(Html(response).into_response())
 }
 
 #[handler]
@@ -302,86 +294,61 @@ pub async fn local_app_create(
 }
 
 #[handler]
-pub async fn local_app_edit(session: &Session, id: Path<u8>) -> Result<impl IntoResponse> {
-    match session.get::<User>("user") {
-        Some(user) if user.is_superuser => {
-            let db = get_db();
+pub async fn local_app_edit(id: Path<u8>) -> Result<impl IntoResponse> {
+    let db = get_db();
 
-            let mut context = Context::new();
+    let mut context = Context::new();
 
-            if let Some(app) = LocalApp::Entity::find_by_id(id.0)
-                .one(db)
-                .await
-                .map_err(InternalServerError)?
-            {
-                context.insert("app", &app);
+    if let Some(app) = LocalApp::Entity::find_by_id(id.0)
+        .one(db)
+        .await
+        .map_err(InternalServerError)?
+    {
+        context.insert("app", &app);
 
-                let response = TEMPLATES
-                    .render("local_app_update.html", &context)
-                    .map_err(InternalServerError)?;
-                Ok(Html(response).into_response())
-            } else {
-                Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
-            }
-        }
-        _ => {
-            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
-            Ok(Response::builder().status(StatusCode::FORBIDDEN).body(()))
-        }
+        let response = TEMPLATES
+            .render("local_app_update.html", &context)
+            .map_err(InternalServerError)?;
+        Ok(Html(response).into_response())
+    } else {
+        Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
     }
 }
 
 #[handler]
-pub async fn local_app_new(session: &Session) -> Result<impl IntoResponse> {
-    match session.get::<User>("user") {
-        Some(user) if user.is_superuser => {
-            let mut context = Context::new();
+pub async fn local_app_new() -> Result<impl IntoResponse> {
+    let mut context = Context::new();
 
-            let response = TEMPLATES
-                .render("local_app_create.html", &context)
-                .map_err(InternalServerError)?;
-            Ok(Html(response).into_response())
-        }
-        _ => {
-            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
-            Ok(Response::builder().status(StatusCode::FORBIDDEN).body(()))
-        }
-    }
+    let response = TEMPLATES
+        .render("local_app_create.html", &context)
+        .map_err(InternalServerError)?;
+    Ok(Html(response).into_response())
 }
 
 #[handler]
-pub async fn local_app_read(session: &Session, id: Path<u8>) -> Result<impl IntoResponse> {
-    match session.get::<User>("user") {
-        Some(user) if user.is_superuser => {
-            let db = get_db();
+pub async fn local_app_read(id: Path<u8>) -> Result<impl IntoResponse> {
+    let db = get_db();
 
-            let mut context = Context::new();
+    let mut context = Context::new();
 
-            if let Some(app) = LocalApp::Entity::find_by_id(id.0)
-                .one(db)
-                .await
-                .map_err(InternalServerError)?
-            {
-                context.insert("app", &app);
+    if let Some(app) = LocalApp::Entity::find_by_id(id.0)
+        .one(db)
+        .await
+        .map_err(InternalServerError)?
+    {
+        context.insert("app", &app);
 
-                let response = TEMPLATES
-                    .render("local_app_read.html", &context)
-                    .map_err(InternalServerError)?;
-                Ok(Html(response).into_response())
-            } else {
-                Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
-            }
-        }
-        _ => {
-            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
-            Ok(Response::builder().status(StatusCode::FORBIDDEN).body(()))
-        }
+        let response = TEMPLATES
+            .render("local_app_read.html", &context)
+            .map_err(InternalServerError)?;
+        Ok(Html(response).into_response())
+    } else {
+        Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
     }
 }
 
 #[handler]
 pub async fn local_app_update(
-    session: &Session,
     id: Path<u8>,
     Form(AppCard {
         name,
@@ -393,68 +360,52 @@ pub async fn local_app_update(
         ..
     }): Form<AppCard>,
 ) -> Result<impl IntoResponse> {
-    match session.get::<User>("user") {
-        Some(user) if user.is_superuser => {
-            let db = get_db();
+    let db = get_db();
 
-            let mut context = Context::new();
+    let mut context = Context::new();
 
-            if let Some(app) = LocalApp::Entity::find_by_id(id.0)
-                .one(db)
-                .await
-                .map_err(InternalServerError)?
-            {
-                let mut app: LocalApp::ActiveModel = app.into();
-                app.name = Set(name);
-                app.slug = Set(slug);
-                app.launch_url = Set(launch_url);
-                app.icon = Set(Some(icon));
-                app.description = Set(Some(description));
-                app.group = Set(Some(group));
+    if let Some(app) = LocalApp::Entity::find_by_id(id.0)
+        .one(db)
+        .await
+        .map_err(InternalServerError)?
+    {
+        let mut app: LocalApp::ActiveModel = app.into();
+        app.name = Set(name);
+        app.slug = Set(slug);
+        app.launch_url = Set(launch_url);
+        app.icon = Set(Some(icon));
+        app.description = Set(Some(description));
+        app.group = Set(Some(group));
 
-                let app: LocalApp::Model = app.update(db).await.map_err(InternalServerError)?;
+        let app: LocalApp::Model = app.update(db).await.map_err(InternalServerError)?;
 
-                context.insert("app", &app);
-                let response = TEMPLATES
-                    .render("local_app_read.html", &context)
-                    .map_err(InternalServerError)?;
-                Ok(Html(response).into_response())
-            } else {
-                Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
-            }
-        }
-        _ => {
-            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
-            Ok(Response::builder().status(StatusCode::FORBIDDEN).body(()))
-        }
+        context.insert("app", &app);
+        let response = TEMPLATES
+            .render("local_app_read.html", &context)
+            .map_err(InternalServerError)?;
+        Ok(Html(response).into_response())
+    } else {
+        Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
     }
 }
 
 #[handler]
-pub async fn local_app_delete(session: &Session, id: Path<u8>) -> Result<impl IntoResponse> {
-    match session.get::<User>("user") {
-        Some(user) if user.is_superuser => {
-            let db = get_db();
+pub async fn local_app_delete(id: Path<u8>) -> Result<impl IntoResponse> {
+    let db = get_db();
 
-            /* delete_by_id returns a struct with a rows_affected count. If that's 0, the app wasn't deleted.
-             * If more than 1, something weird happened. */
-            let status = match LocalApp::Entity::delete_by_id(id.0)
-                .exec(db)
-                .await
-                .map_err(InternalServerError)?
-                .rows_affected
-            {
-                0 => StatusCode::NOT_FOUND,
-                1 => StatusCode::OK,
-                _ => StatusCode::INTERNAL_SERVER_ERROR,
-            };
-            Ok(Response::builder().status(status).body(()))
-        }
-        _ => {
-            /* If we get here, either the visitor isn't logged-in or isn't a superuser */
-            Ok(Response::builder().status(StatusCode::FORBIDDEN).body(()))
-        }
-    }
+    /* delete_by_id returns a struct with a rows_affected count. If that's 0, the app wasn't deleted.
+     * If more than 1, something weird happened. */
+    let status = match LocalApp::Entity::delete_by_id(id.0)
+        .exec(db)
+        .await
+        .map_err(InternalServerError)?
+        .rows_affected
+    {
+        0 => StatusCode::NOT_FOUND,
+        1 => StatusCode::OK,
+        _ => StatusCode::INTERNAL_SERVER_ERROR,
+    };
+    Ok(Response::builder().status(status).body(()))
 }
 
 /* *** TESTS *** */
