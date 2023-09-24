@@ -11,10 +11,9 @@ What works as of v.03?
 * Displaying the applications to the user
 * Redis sessions
 * Docker integration
-* Reading application info stored in your PostGres database (but not writing to it yet)
+* Storing info about applications you're not managing with Authentik in your PostGres database
 
 Future work:
-* Finishing CRUD for local (non-Authentik) applications
 * User-added bookmark links
 * Substantial prettification
 
@@ -22,3 +21,28 @@ Setup:
 1. Ensure you have a working Authentik setup (version 2022.7 or later)
 2. Add a new OAuth2 app in your Authentik environment for Synalpheus
 3. Configure the .env file for Synalpheus with the appropriate fields
+4. Create a new user in Postgres -- Synalpheus doesn't share a DB user or access with Authentik
+5. Add a service for Synalpheus to your docker-compose.yml:
+
+```yaml
+  synalpheus:
+    image: toxotes/synalpheus:latest
+    container_name: synalpheus
+    restart: unless-stopped
+    depends_on:
+      - authentik-server
+    ports:
+      - 8080:80
+    volumes:
+      - /opt/appdata/synalpheus:/synalpheus
+    environment:
+      PUID: ${PUID}
+      PGUID: ${PGID}
+      SYN_AUTHENTIK_URL: [your Authentik URL]
+      SYN_URL: [your Synalpheus URL]
+      SYN_CLIENT_ID: ${SYN_CLIENT_ID} # Synalpheus's client ID in Authentik
+      SYN_CLIENT_SECRET: ${SYN_CLIENT_SECRET} # Synalpheus's client secret in Authentik
+      SYN_REDIRECT_PATH: "/auth/authentik"
+      SYN_PROVIDER: "Synalpheus"
+      SYN_POSTGRES_URL: "postgres://[db user]:[db password]@postgres/synalpheus"
+```
