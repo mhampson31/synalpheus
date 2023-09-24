@@ -414,7 +414,7 @@ pub async fn local_app_delete(id: Path<u8>) -> Result<impl IntoResponse> {
 mod tests {
     use super::*;
     use crate::tests::load_test_app;
-    use poem::{session::CookieSession, test::TestClient};
+    use poem::test::TestClient;
 
     /* We expect the main index to be generally reachable */
     #[tokio::test]
