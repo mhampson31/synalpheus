@@ -24,6 +24,7 @@ COPY ./src ./src
 COPY ./templates ./templates
 COPY ./entity ./entity
 COPY ./migration ./migration
+COPY ./assets ./assets
 
 # Build for release.
 RUN rm ./target/release/deps/synalpheus*
@@ -37,6 +38,7 @@ COPY --from=build /synalpheus/target/release/synalpheus /usr/src/synalpheus
 # COPY --from=build /synalpheus/target/release/synalpheus/target/x86_64-unknown-linux-musl/release/synalpheus .
 
 COPY --from=build /synalpheus/templates /usr/src/templates
+COPY --from=build /synalpheus/assets /usr/src/assets
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y ca-certificates libssl-dev pkg-config curl \
