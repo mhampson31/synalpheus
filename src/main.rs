@@ -7,9 +7,9 @@ use poem::{
     http::StatusCode,
     listener::TcpListener,
     middleware::{CatchPanic, Csrf, Tracing},
-    session::{CookieConfig, RedisStorage, ServerSession},
+    session::{CookieConfig, RedisStorage, ServerSession, Session},
     web::Html,
-    Endpoint, EndpointExt, IntoResponse, Result, Route, Server,
+    Endpoint, EndpointExt, FromRequest, IntoResponse, Request, RequestBody, Result, Route, Server,
 };
 
 use redis::aio::ConnectionManager;
@@ -290,6 +290,20 @@ struct User {
     sub: String,
     #[serde(default)]
     is_superuser: bool,
+}
+
+/* An extractor to easily get the user in a route function */
+#[poem::async_trait]
+impl<'a> FromRequest<'a> for User {
+    async fn from_request(req: &'a Request, body: &mut RequestBody) -> Result<Self> {
+        let user = req
+            .extensions()
+            .get::<Session>()
+            .ok_or_else(|| poem::Error::from_string("missing session", StatusCode::FORBIDDEN))?
+            .get::<User>("user")
+            .ok_or_else(|| poem::Error::from_string("missing user", StatusCode::FORBIDDEN))?;
+        Ok(user)
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
