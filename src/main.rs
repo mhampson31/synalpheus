@@ -7,9 +7,9 @@ use poem::{
     http::StatusCode,
     listener::TcpListener,
     middleware::{CatchPanic, Csrf, Tracing},
-    session::{CookieConfig, RedisStorage, ServerSession},
+    session::{CookieConfig, RedisStorage, ServerSession, Session},
     web::Html,
-    Endpoint, EndpointExt, IntoResponse, Result, Route, Server,
+    Endpoint, EndpointExt, FromRequest, IntoResponse, Request, RequestBody, Result, Route, Server,
 };
 
 use redis::aio::ConnectionManager;
@@ -85,22 +85,23 @@ impl Config {
     pub fn new() -> Config {
         /* Set up what we need to run Synalpheus */
 
-        let synalpheus_url = Url::parse(dotenv::var("SYN_URL").expect("Missing SYN_URL").as_str())
+        let synalpheus_url = Url::parse(dotenvy::var("SYN_URL").expect("Missing SYN_URL").as_str())
             .expect("SYN_URL is not a parsable URL");
 
-        let port: u16 = match dotenv::var("SYN_PORT") {
+        let port: u16 = match dotenvy::var("SYN_PORT") {
             Ok(p) => p.parse().expect("SYN_PORT is not a valid port number"),
             Err(_) => 80,
         };
 
         /* Set up what we need to talk to Authentik */
-        let authentik_url = dotenv::var("SYN_AUTHENTIK_URL").expect("Missing SYN_AUTHENTIK_URL");
+        let authentik_url = dotenvy::var("SYN_AUTHENTIK_URL").expect("Missing SYN_AUTHENTIK_URL");
         let authentik_url =
             Url::parse(authentik_url.as_str()).expect("SYN_AUTHENTIK_URL is not a parsable URL");
 
-        let redirect_path = dotenv::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH");
+        let redirect_path = dotenvy::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH");
 
-        let syn_provider = dotenv::var("SYN_PROVIDER").unwrap_or_else(|_| "Synalpheus".to_string());
+        let syn_provider =
+            dotenvy::var("SYN_PROVIDER").unwrap_or_else(|_| "Synalpheus".to_string());
 
         Config {
             authentik_url: authentik_url.clone(),
@@ -214,7 +215,7 @@ fn create_app() -> impl Endpoint {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
 
     if env::var_os("RUST_LOG").is_none() {
         env::set_var("RUST_LOG", "poem=debug");
@@ -290,6 +291,20 @@ struct User {
     sub: String,
     #[serde(default)]
     is_superuser: bool,
+}
+
+/* An extractor to easily get the user in a route function */
+#[poem::async_trait]
+impl<'a> FromRequest<'a> for User {
+    async fn from_request(req: &'a Request, body: &mut RequestBody) -> Result<Self> {
+        let user = req
+            .extensions()
+            .get::<Session>()
+            .ok_or_else(|| poem::Error::from_string("missing session", StatusCode::FORBIDDEN))?
+            .get::<User>("user")
+            .ok_or_else(|| poem::Error::from_string("missing user", StatusCode::FORBIDDEN))?;
+        Ok(user)
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

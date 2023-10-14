@@ -9,7 +9,7 @@ members = [".", "entity", "migration"]
 [dependencies]
 entity = { path = "entity" }
 migration = { path = "migration" }
-dotenv = "0.15.0"
+dotenvy = "0.15"
 futures = { version = "0.3", features = ["executor"] }
 oauth2 = "4"
 once_cell = "1.18"
