@@ -2,11 +2,12 @@
     {% if applications %}
     {% for app in applications %}
     <div class="column is-half-tablet is-one-third-desktop is-one-quarter-widescreen">
-        <div class="card">
 
-            {% if app.launch_url %}
-            <a href="{{ app.launch_url }}" class="">
-                {% endif %}
+        {% if app.launch_url %}
+        <a href="{{ app.launch_url }}" class="">
+            {% endif %}
+            <div class="card">
+
                 <header class="card-header">
 
                     <div class="media">
@@ -26,32 +27,31 @@
                         </div>
 
                         <div class="media-content">
-                            <p class="title is-4">{{ app.name }}</p>
-                            {% if app.group %}
-                            <p class="subtitle is-6">{{ app.group }}</p>
-                            {% endif %}
+                            <p class="card-header-title is-4">{{ app.name }}</p>
                         </div>
                     </div>
 
-
                 </header>
-                {% if app.launch_url %}
-            </a>
-            {% endif %}
 
-            <div class="card-content">
-                <div class="content">
-                    <div class="card-section">
-                        <p class="card-text">{{app.description}}</p>
+                <div class="card-content">
+                    <div class="content">
+                        <div class="card-section">
+                            <p class="card-text">{{app.description}}</p>
+                        </div>
                     </div>
                 </div>
+
+                <div class="card-footer">
+                    {% if app.group %}
+                    <p class="card-footer-item is-6">{{ app.group }}</p>
+                    {% endif %}
+
+                </div>
+
             </div>
-
-            <footer class="card-footer">
-
-            </footer>
-
-        </div>
+            {% if app.launch_url %}
+        </a>
+        {% endif %}
     </div>
 
     {% endfor %}
