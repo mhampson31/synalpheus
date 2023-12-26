@@ -1,5 +1,5 @@
 # Rust as the base image
-FROM rust:1.72-slim-bullseye as build
+FROM rust:1.74.1-slim-bullseye as build
 
 # Create a new empty shell project
 RUN USER=root cargo new --bin synalpheus
