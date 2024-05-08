@@ -298,7 +298,6 @@ struct User {
 }
 
 /* An extractor to easily get the user in a route function */
-#[poem::async_trait]
 impl<'a> FromRequest<'a> for User {
     async fn from_request(req: &'a Request, body: &mut RequestBody) -> Result<Self> {
         let user = req

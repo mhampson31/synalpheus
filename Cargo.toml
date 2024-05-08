@@ -1,6 +1,6 @@
 [package]
 name = "synalpheus"
-version = "0.3.3"
+version = "0.3.4"
 edition = "2021"
 
 [workspace]
@@ -13,14 +13,14 @@ dotenvy = "0.15"
 futures = { version = "0.3", features = ["executor"] }
 oauth2 = "4"
 once_cell = "1.19"
-poem = { version = "1.3", features = [
+poem = { version = "3.0", features = [
     "session",
     "csrf",
     "redis-session",
     "test",
     "static-files",
 ] }
-redis = { version = "0.23", features = [
+redis = { version = "0.25", features = [
     "aio",
     "tokio-comp",
     "connection-manager",

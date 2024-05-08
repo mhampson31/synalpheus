@@ -69,7 +69,7 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
             .await
             .map_err(InternalServerError)?;
 
-        if response.status() == StatusCode::OK {
+        if response.status().is_success() {
             let mut auth_apps = client
                 .get(config.authentik_api.to_string())
                 .bearer_auth(token.clone())

@@ -1,6 +1,6 @@
 use poem::{
-    async_trait, http::StatusCode, session::Session, Endpoint, IntoResponse, Middleware, Request,
-    Response, Result,
+    http::StatusCode, session::Session, Endpoint, IntoResponse, Middleware, Request, Response,
+    Result,
 };
 
 use super::User;
@@ -20,7 +20,6 @@ pub struct RequireAdminImpl<E> {
     ep: E,
 }
 
-#[async_trait]
 impl<E: Endpoint> Endpoint for RequireAdminImpl<E> {
     type Output = Response;
 
