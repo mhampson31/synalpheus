@@ -125,6 +125,7 @@ pub async fn login(session: &Session) -> Result<impl IntoResponse> {
         .add_scope(Scope::new("openid".to_string()))
         .add_scope(Scope::new("profile".to_string()))
         .add_scope(Scope::new("email".to_string()))
+        .add_scope(Scope::new("offline_access".to_string()))
         .add_scope(Scope::new("goauthentik.io/api".to_string()))
         .set_pkce_challenge(pkce_challenge)
         .url();
