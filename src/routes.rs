@@ -1,6 +1,6 @@
 use oauth2::{
-    reqwest::async_http_client, AuthorizationCode, CsrfToken, PkceCodeChallenge, Scope,
-    TokenResponse,
+    basic::BasicTokenType, reqwest::async_http_client, AuthorizationCode, CsrfToken,
+    EmptyExtraTokenFields, PkceCodeChallenge, Scope, StandardTokenResponse, TokenResponse,
 };
 use poem::{
     error::{BadRequest, Error, InternalServerError},
@@ -17,6 +17,8 @@ use sea_orm::{
 };
 use serde::Deserialize;
 use tera::Context;
+
+use crate::Pagination;
 
 use super::{get_config, get_db, get_oauth_client, AppCard, AppResponse, User, TEMPLATES};
 
@@ -54,7 +56,9 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
 
     let mut context = Context::new();
 
-    if let Some(token) = session.get::<String>("access_token") {
+    if let Some(token) =
+        session.get::<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>>("token")
+    {
         let client = reqwest::Client::new();
 
         /* This vec will hold our apps, whether from Authentik or the DB */
@@ -62,20 +66,22 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
 
         let config = get_config();
 
+        /*let mut response = client
+        .get(config.authentik_api.to_string())
+        .bearer_auth(token.clone())
+        .send()
+        .await
+        .map_err(InternalServerError)?;*/
+
         let mut response = client
             .get(config.authentik_api.to_string())
-            .bearer_auth(token.clone())
+            .bearer_auth(token.access_token().secret())
             .send()
             .await
             .map_err(InternalServerError)?;
 
         if response.status().is_success() {
-            let mut auth_apps = client
-                .get(config.authentik_api.to_string())
-                .bearer_auth(token.clone())
-                .send()
-                .await
-                .map_err(InternalServerError)?
+            let auth_apps = response
                 .json::<AppResponse>()
                 .await
                 .map_err(InternalServerError)?;
@@ -103,8 +109,11 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
             );
 
             applications.sort_by_key(|app| app.group.clone());
+
+            context.insert("applications", &applications);
+        } else {
+            println!("{:#?}", response.text().await.unwrap());
         }
-        context.insert("applications", &applications);
     }
 
     let response = TEMPLATES
@@ -129,8 +138,6 @@ pub async fn login(session: &Session) -> Result<impl IntoResponse> {
         .add_scope(Scope::new("goauthentik.io/api".to_string()))
         .set_pkce_challenge(pkce_challenge)
         .url();
-
-    println!("Current token: {:#?}", csrf_token);
 
     session.set("state", csrf_token);
     session.set("pkce", pkce_verifier);
@@ -177,13 +184,6 @@ pub async fn login_authorized(
         .await
         .map_err(InternalServerError)?;
 
-    let access_token = token.access_token().secret();
-    /* How do we actually use the refresh token? */
-    let refresh_token = token
-        .refresh_token()
-        .ok_or_else(|| Error::from_string("No refresh token", StatusCode::BAD_REQUEST))?
-        .secret();
-
     let client = reqwest::Client::new();
 
     let user_data: User = {
@@ -208,8 +208,7 @@ pub async fn login_authorized(
 
     // Create a new session filled with user data
     session.set("user", user_data);
-    session.set("refresh_token", refresh_token);
-    session.set("access_token", access_token);
+    session.set("token", token);
 
     Ok(Redirect::permanent("/"))
 }
