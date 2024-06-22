@@ -19,7 +19,12 @@ Future work:
 
 Setup:
 1. Ensure you have a working Authentik setup (version 2022.7 or later)
-2. Add a new OAuth2 app in your Authentik environment for Synalpheus
+2. Add a new OAuth2 app in your Authentik environment for Synalpheus with the following scopes:
+  * openid
+  * profile
+  * email
+  * offline_access
+  * goauthentik.io/api
 3. Configure the .env file for Synalpheus with the appropriate fields
 4. Create a new user in Postgres -- Synalpheus doesn't share a DB user or access with Authentik
 5. Add a service for Synalpheus to your docker-compose.yml:

@@ -327,7 +327,10 @@ struct Pagination {
     end_index: i64,
 }
 
-/* This doesn't currently need to do anything */
+/* This doesn't currently need to do anything
+   Todo: document why this needs to exist here
+*/
+
 trait Application {}
 
 /* We probably don't need all these fields */
