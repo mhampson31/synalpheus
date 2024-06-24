@@ -169,10 +169,6 @@ fn create_app() -> impl Endpoint {
     Route::new()
         // static files
         .at(
-            "static/js/htmx.min.js",
-            StaticFileEndpoint::new("assets/js/htmx.min.js"),
-        )
-        .at(
             "static/images/edit.svg",
             StaticFileEndpoint::new("assets/images/edit.svg"),
         )
