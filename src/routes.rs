@@ -18,8 +18,6 @@ use sea_orm::{
 use serde::Deserialize;
 use tera::Context;
 
-use crate::Pagination;
-
 use super::{get_config, get_db, get_oauth_client, AppCard, AppResponse, User, TEMPLATES};
 
 use entity::application as LocalApp;
