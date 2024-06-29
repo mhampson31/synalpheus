@@ -1,5 +1,6 @@
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
-use once_cell::sync::{Lazy, OnceCell};
+use once_cell::sync::Lazy;
+
 use poem::{
     endpoint::StaticFileEndpoint,
     error::{InternalServerError, NotFoundError},
@@ -16,6 +17,7 @@ use redis::aio::ConnectionManager;
 use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
+use std::sync::OnceLock;
 use tera::{Context, Tera};
 use url::Url;
 
@@ -23,6 +25,7 @@ mod data;
 mod middleware;
 mod routes;
 
+//pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
 pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
     /* Tera::new(glob) seems to lead to a hang with 100% CPU on Docker.
      *  https://github.com/Keats/tera/issues/719
@@ -59,7 +62,7 @@ pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
 });
 
 /* This largely holds our Authentik information */
-pub static CONFIG: OnceCell<Config> = OnceCell::new();
+pub static CONFIG: OnceLock<Config> = OnceLock::new();
 
 #[derive(Debug)]
 pub struct Config {
@@ -154,7 +157,7 @@ pub fn get_config() -> &'static Config {
 }
 
 /* Database connection */
-pub static DATABASE: OnceCell<DatabaseConnection> = OnceCell::new();
+pub static DATABASE: OnceLock<DatabaseConnection> = OnceLock::new();
 
 pub fn get_db() -> &'static DatabaseConnection {
     DATABASE.get().expect("Database has not been initialized")
