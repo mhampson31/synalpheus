@@ -1,6 +1,7 @@
 use oauth2::{
     basic::BasicTokenType, reqwest::async_http_client, AuthorizationCode, CsrfToken,
-    EmptyExtraTokenFields, PkceCodeChallenge, Scope, StandardTokenResponse, TokenResponse,
+    EmptyExtraTokenFields, ExtraTokenFields, PkceCodeChallenge, Scope, StandardTokenResponse,
+    TokenResponse,
 };
 use poem::{
     error::{BadRequest, Error, InternalServerError},
@@ -18,7 +19,7 @@ use sea_orm::{
 use serde::Deserialize;
 use tera::Context;
 
-use crate::Pagination;
+use std::time::{Duration, SystemTime};
 
 use super::{get_config, get_db, get_oauth_client, AppCard, AppResponse, User, TEMPLATES};
 
@@ -50,28 +51,77 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
     }
 }
 
+async fn get_token(
+    session: &Session,
+) -> Result<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>> {
+    if let Some(mut token) =
+        session.get::<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>>("token")
+    {
+        /* We should have the expiry set in the session.
+        If not, something's goofy, and we should probably try to force a refresh. */
+        let expiry = match session.get::<SystemTime>("expiry") {
+            Some(t) => t,
+            None => SystemTime::now() - Duration::new(1, 0),
+        };
+
+        // Are we past the expiry time? If so, refresh the token.
+        if SystemTime::now() > expiry {
+            match token.refresh_token() {
+                Some(refresh_token) => {
+                    println!("Refreshing token");
+                    let client = get_oauth_client();
+
+                    let new_token = client
+                        .exchange_refresh_token(refresh_token)
+                        .request_async(async_http_client)
+                        .await
+                        .map_err(InternalServerError)?;
+
+                    let new_expiry = SystemTime::now()
+                        + new_token
+                            .expires_in()
+                            .unwrap_or_else(|| Duration::new(3600, 0));
+
+                    /* We have a new token, so update the session */
+                    println!("New expiry: {:#?}", &new_expiry);
+                    session.set("expiry", new_expiry);
+
+                    token = new_token;
+                    session.set("token", token.clone());
+
+                    Ok(token)
+                }
+                None => Err(Error::from_string(
+                    "No refresh token found",
+                    StatusCode::UNAUTHORIZED,
+                )),
+            }
+        } else {
+            // The current token should still be good, so no need to refresh it
+            Ok(token)
+        }
+    } else {
+        // There is no token, that's not right
+        Err(Error::from_string(
+            "No access token found",
+            StatusCode::UNAUTHORIZED,
+        ))
+    }
+}
+
 #[handler]
 pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
     /* Send the user back to login if we can't get the access token. Is 303 the right code? */
 
     let mut context = Context::new();
 
-    if let Some(token) =
-        session.get::<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>>("token")
-    {
+    if let Ok(token) = get_token(session).await {
         let client = reqwest::Client::new();
 
         /* This vec will hold our apps, whether from Authentik or the DB */
         let mut applications: Vec<AppCard> = Vec::new();
 
         let config = get_config();
-
-        /*let mut response = client
-        .get(config.authentik_api.to_string())
-        .bearer_auth(token.clone())
-        .send()
-        .await
-        .map_err(InternalServerError)?;*/
 
         let mut response = client
             .get(config.authentik_api.to_string())
@@ -114,13 +164,15 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
         } else {
             println!("{:#?}", response.text().await.unwrap());
         }
+
+        let response = TEMPLATES
+            .render("app_cards.html", &context)
+            .map_err(InternalServerError)?;
+
+        Ok(Html(response).into_response())
+    } else {
+        Ok(Redirect::see_other("/login").into_response())
     }
-
-    let response = TEMPLATES
-        .render("app_cards.html", &context)
-        .map_err(InternalServerError)?;
-
-    Ok(Html(response).into_response())
 }
 
 #[handler]
@@ -151,6 +203,7 @@ pub async fn login_authorized(
     session: &Session,
     Query(AuthRequest { code, state }): Query<AuthRequest>,
 ) -> Result<Redirect> {
+    // Compare the state codes. If it's missing or doesn't match, don't continue.
     if let Some(csrf_token) = session.get::<CsrfToken>("state") {
         if csrf_token.secret() != state.secret() {
             return Err(Error::from_string(
@@ -159,15 +212,13 @@ pub async fn login_authorized(
             ));
         }
     } else {
-        println!(
-            "Missing state code: {:#?}",
-            session.get("state").unwrap_or_else(|| "none".to_string())
-        );
         return Err(Error::from_string(
             "Missing state code",
             StatusCode::BAD_REQUEST,
         ));
     }
+
+    // Continue with the OAuth2 workflow
 
     let pkce_verifier = session
         .get("pkce")
@@ -183,6 +234,8 @@ pub async fn login_authorized(
         .request_async(async_http_client)
         .await
         .map_err(InternalServerError)?;
+
+    let expiry = SystemTime::now() + token.expires_in().unwrap_or_else(|| Duration::new(3600, 0));
 
     let client = reqwest::Client::new();
 
@@ -209,6 +262,7 @@ pub async fn login_authorized(
     // Create a new session filled with user data
     session.set("user", user_data);
     session.set("token", token);
+    session.set("expiry", expiry);
 
     Ok(Redirect::permanent("/"))
 }
