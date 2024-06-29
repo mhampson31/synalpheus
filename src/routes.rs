@@ -59,37 +59,53 @@ async fn get_token(
     if let Some(mut token) =
         session.get::<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>>("token")
     {
-        // If the access token is expired, refresh it
-
+        /* We should have the expiry set in the session.
+        If not, something's goofy, and we should probably try to force a refresh. */
         let expiry = match session.get::<SystemTime>("expiry") {
             Some(t) => t,
             None => SystemTime::now() - Duration::new(1, 0),
         };
 
+        // Are we past the expiry time? If so, refresh the token.
         if SystemTime::now() > expiry {
-            println!("Refreshing token");
-            let client = get_oauth_client();
-            let new_token = client
-                .exchange_refresh_token(token.refresh_token().unwrap())
-                .request_async(async_http_client)
-                .await
-                .map_err(InternalServerError)?;
+            match token.refresh_token() {
+                Some(refresh_token) => {
+                    println!("Refreshing token");
+                    let client = get_oauth_client();
+                    let new_token = client
+                        .exchange_refresh_token(refresh_token)
+                        .request_async(async_http_client)
+                        .await
+                        .map_err(InternalServerError)?;
 
-            let new_expiry = SystemTime::now()
-                + new_token
-                    .expires_in()
-                    .unwrap_or_else(|| Duration::new(3600, 0));
-            println!("New expiry: {:#?}", &new_expiry);
-            session.set("expiry", new_expiry);
+                    let new_expiry = SystemTime::now()
+                        + new_token
+                            .expires_in()
+                            .unwrap_or_else(|| Duration::new(3600, 0));
 
-            token = new_token;
-            session.set("token", token.clone());
+                    /* We have a new token, so update the session */
+                    println!("New expiry: {:#?}", &new_expiry);
+                    session.set("expiry", new_expiry);
+
+                    token = new_token;
+                    session.set("token", token.clone());
+
+                    Ok(token)
+                }
+                None => Err(Error::from_string(
+                    "No refresh token found",
+                    StatusCode::UNAUTHORIZED,
+                )),
+            }
+        } else {
+            // The current token should still be good, so no need to refresh it
+            Ok(token)
         }
-        Ok(token)
     } else {
+        // There is no token, that's not right
         Err(Error::from_string(
-            "Could not refresh access token",
-            StatusCode::INTERNAL_SERVER_ERROR,
+            "No access token found",
+            StatusCode::UNAUTHORIZED,
         ))
     }
 }
