@@ -1,7 +1,6 @@
 use oauth2::{
     basic::BasicTokenType, reqwest::async_http_client, AuthorizationCode, CsrfToken,
-    EmptyExtraTokenFields, ExtraTokenFields, PkceCodeChallenge, Scope, StandardTokenResponse,
-    TokenResponse,
+    EmptyExtraTokenFields, PkceCodeChallenge, Scope, StandardTokenResponse, TokenResponse,
 };
 use poem::{
     error::{BadRequest, Error, InternalServerError},
