@@ -5,8 +5,8 @@ What's new in Synalpheus?
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v0.4.1] - 2024-05-14
--
+## [v0.4.1] - 2024-06-29
+- Fixed an issue where the user's Authentik access was not being refreshed when it could be
 
 ## [v0.4.0] - 2024-05-14
 - Moved to Bulma 1.0 and updated some of the styling. Now supports dark mode.
