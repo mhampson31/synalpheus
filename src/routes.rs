@@ -21,8 +21,6 @@ use tera::Context;
 
 use std::time::{Duration, SystemTime};
 
-use crate::Pagination;
-
 use super::{get_config, get_db, get_oauth_client, AppCard, AppResponse, User, TEMPLATES};
 
 use entity::application as LocalApp;
@@ -72,6 +70,7 @@ async fn get_token(
                 Some(refresh_token) => {
                     println!("Refreshing token");
                     let client = get_oauth_client();
+
                     let new_token = client
                         .exchange_refresh_token(refresh_token)
                         .request_async(async_http_client)
