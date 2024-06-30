@@ -469,15 +469,18 @@ mod tests {
     use crate::tests::load_test_app;
     use poem::test::TestClient;
 
+    /* Remember to use flavor = "multi_thread" for any tests that use CONFIG (even indirectly).
+    This is because we use block_in_place to construct that, which requires multithreading. */
+
     /* We expect the main index to be generally reachable */
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn can_reach_index() {
         let client = TestClient::new(load_test_app());
         client.get("/").send().await.assert_status_is_ok();
     }
 
     /* We expect the login page to redirect to Authentik */
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn can_reach_login() {
         let client = TestClient::new(load_test_app());
         client
@@ -488,7 +491,7 @@ mod tests {
     }
 
     /* We expect the logout page to redirect back home */
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn can_reach_logout() {
         let client = TestClient::new(load_test_app());
         client
@@ -499,7 +502,7 @@ mod tests {
     }
 
     /* We expect the OAuth redirect URL to respond to, but not handle, random get requests. */
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn can_reach_redirect() {
         let config = get_config();
         let redirect_path = config.redirect_path.clone();
