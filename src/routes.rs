@@ -471,7 +471,7 @@ pub async fn local_app_delete(id: Path<u8>) -> Result<impl IntoResponse> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tests::{get_test_config, load_test_app};
+    use crate::tests::load_test_app;
     use poem::test::TestClient;
 
     /* Remember to use flavor = "multi_thread" for any tests that use CONFIG (even indirectly).
@@ -509,7 +509,7 @@ mod tests {
     /* We expect the OAuth redirect URL to respond to, but not handle, random get requests. */
     #[tokio::test(flavor = "multi_thread")]
     async fn can_reach_redirect() {
-        let config = get_test_config();
+        let config = get_config();
         let redirect_path = config.redirect_path.clone();
         // send request and check the status code
         let client = TestClient::new(load_test_app());
