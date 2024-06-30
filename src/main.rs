@@ -138,7 +138,11 @@ impl Config {
                 .expect("Could not construct userinfo endpoint"),
 
             logout: authentik_url
-                .join(format!("application/o/{syn_provider}/end-session/").as_str())
+                .join(
+                    format!("application/o/{syn_provider}/end-session/")
+                        .to_lowercase()
+                        .as_str(),
+                )
                 .expect("Could not construct logout endpoint"),
 
             port,
