@@ -222,6 +222,10 @@ fn create_app() -> impl Endpoint {
             "static/css/bulma.min.css",
             StaticFileEndpoint::new("assets/css/bulma.min.css"),
         )
+        .at(
+            "favicon.svg",
+            StaticFileEndpoint::new("assets/images/favicon/favicon.svg"),
+        )
         // page routes
         .at("/", get(routes::index))
         .at("/login", get(routes::login))
