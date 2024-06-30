@@ -78,15 +78,25 @@ pub static CONFIG: OnceLock<Config> = OnceLock::new();
 
 #[derive(Debug)]
 pub struct Config {
+    // Our Authentik URL
     authentik_url: Url,
+
+    // Our Synalpheus URL
+    synalpheus_url: Url,
+
+    // The port we're running on
+    port: u16,
+
+    // The name of the provider created for Synalpheus in Authentik
     syn_provider: String,
+
+    // A structure containing all our OpenID endpoints
     openid: OpenID,
+
+    // Our Oauth2 configuration info
     client_id: String,
     client_secret: String,
     redirect_path: String,
-    redirect_url: Url,
-    applications_endpoint: Url,
-    port: u16,
 }
 
 impl Config {
@@ -110,7 +120,8 @@ impl Config {
         let authentik_url =
             Url::parse(authentik_url.as_str()).expect("SYN_AUTHENTIK_URL is not a parsable URL");
 
-        let redirect_path = dotenvy::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH");
+        let redirect_path =
+            dotenvy::var("SYN_REDIRECT_PATH").unwrap_or_else(|_| "auth/authentik".to_string());
 
         let syn_provider =
             dotenvy::var("SYN_PROVIDER").unwrap_or_else(|_| "Synalpheus".to_string());
@@ -122,7 +133,7 @@ impl Config {
             let well_known = authentik_url
                 .join(
                     format!("application/o/{syn_provider}/.well-known/openid-configuration")
-                        .to_lowercase()
+                        .to_lowercase() // The provider is probably uppercase, but the endpoint expects lowercase
                         .as_str(),
                 )
                 .expect("Couldn't construct OpenID well-known endpoint");
@@ -148,13 +159,7 @@ impl Config {
 
             redirect_path: redirect_path.clone(),
 
-            redirect_url: synalpheus_url
-                .join(redirect_path.as_str())
-                .expect("Couldn't construct redirect URL"),
-
-            applications_endpoint: authentik_url
-                .join("api/v3/core/applications/")
-                .expect("Could not construct Authentik API URL"),
+            synalpheus_url: synalpheus_url.clone(),
 
             port,
         }
@@ -291,13 +296,18 @@ async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
 fn get_oauth_client() -> BasicClient {
     let config = CONFIG.get_or_init(Config::new);
 
+    let redirect_url = config
+        .synalpheus_url
+        .join(config.redirect_path.as_str())
+        .expect("Couldn't construct redirect URL");
+
     BasicClient::new(
         ClientId::new(config.client_id.clone()),
         Some(ClientSecret::new(config.client_secret.clone())),
         AuthUrl::new(config.openid.authorization_endpoint.to_string()).unwrap(),
         Some(TokenUrl::new(config.openid.token_endpoint.to_string()).unwrap()),
     )
-    .set_redirect_uri(RedirectUrl::new(config.redirect_url.to_string()).unwrap())
+    .set_redirect_uri(RedirectUrl::new(redirect_url.to_string()).unwrap())
 }
 
 #[derive(Debug, Serialize, Deserialize)]

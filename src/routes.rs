@@ -122,8 +122,13 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
 
         let config = get_config();
 
+        let applications_endpoint = config
+            .authentik_url
+            .join("api/v3/core/applications/")
+            .expect("Could not construct Authentik API URL");
+
         let mut response = client
-            .get(config.applications_endpoint.to_string())
+            .get(applications_endpoint)
             .bearer_auth(token.access_token().secret())
             .send()
             .await
