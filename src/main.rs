@@ -61,6 +61,30 @@ pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
     tera
 });
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct OpenID {
+    issuer: Url,
+    authorization_endpoint: Url,
+    token_endpoint: Url,
+    userinfo_endpoint: Url,
+    end_session_endpoint: Url,
+    introspection_endpoint: Url,
+    revocation_endpoint: Url,
+    device_authorization_endpoint: Url,
+}
+
+fn get_well_known(well_known: Url) -> Result<OpenID, reqwest::Error> {
+    let response = reqwest::blocking::get(well_known)?;
+
+    println!("{:#?}", response);
+
+    let openid = response.json::<OpenID>()?;
+
+    println!("{:#?}", &openid);
+
+    Ok(openid)
+}
+
 /* This largely holds our Authentik information */
 pub static CONFIG: OnceLock<Config> = OnceLock::new();
 
@@ -68,6 +92,7 @@ pub static CONFIG: OnceLock<Config> = OnceLock::new();
 pub struct Config {
     authentik_url: Url,
     syn_provider: String,
+    openid: OpenID,
     client_id: String,
     client_secret: String,
     redirect_path: String,
@@ -106,10 +131,27 @@ impl Config {
         let syn_provider =
             dotenvy::var("SYN_PROVIDER").unwrap_or_else(|_| "Synalpheus".to_string());
 
+        let openid = tokio::task::block_in_place(|| {
+            let well_known = authentik_url
+                .join(
+                    format!("application/o/{syn_provider}/.well-known/openid-configuration")
+                        .to_lowercase()
+                        .as_str(),
+                )
+                .expect("Couldn't construct OpenID well-known endpoint");
+
+            let openid = get_well_known(well_known).expect("Could not get OpenID config");
+            println!("{:#?}", &openid);
+
+            openid
+        });
+
         Config {
             authentik_url: authentik_url.clone(),
 
             syn_provider: syn_provider.clone(),
+
+            openid: openid.clone(),
 
             client_id: env::var("SYN_CLIENT_ID").expect("Missing SYN_CLIENT_ID!"),
 
