@@ -73,18 +73,6 @@ struct OpenID {
     device_authorization_endpoint: Url,
 }
 
-fn get_well_known(well_known: Url) -> Result<OpenID, reqwest::Error> {
-    let response = reqwest::blocking::get(well_known)?;
-
-    println!("{:#?}", response);
-
-    let openid = response.json::<OpenID>()?;
-
-    println!("{:#?}", &openid);
-
-    Ok(openid)
-}
-
 /* This largely holds our Authentik information */
 pub static CONFIG: OnceLock<Config> = OnceLock::new();
 
@@ -97,11 +85,7 @@ pub struct Config {
     client_secret: String,
     redirect_path: String,
     redirect_url: Url,
-    authorize_url: Url,
-    token_url: Url,
-    authentik_api: Url,
-    logout: Url,
-    userinfo: Url,
+    applications_endpoint: Url,
     port: u16,
 }
 
@@ -131,6 +115,9 @@ impl Config {
         let syn_provider =
             dotenvy::var("SYN_PROVIDER").unwrap_or_else(|_| "Synalpheus".to_string());
 
+        /* We'll get our OpenID endpoints from Authentik.
+        To do this, we'll use a quick blocking task while we make the request to Authentik.
+        This only happens on initial startup, so shouldn't be a big deal. */
         let openid = tokio::task::block_in_place(|| {
             let well_known = authentik_url
                 .join(
@@ -140,8 +127,10 @@ impl Config {
                 )
                 .expect("Couldn't construct OpenID well-known endpoint");
 
-            let openid = get_well_known(well_known).expect("Could not get OpenID config");
-            println!("{:#?}", &openid);
+            let openid = reqwest::blocking::get(well_known)
+                .expect("Could not get OpenID config")
+                .json::<OpenID>()
+                .expect("Could not parse OpenID response");
 
             openid
         });
@@ -163,25 +152,9 @@ impl Config {
                 .join(redirect_path.as_str())
                 .expect("Couldn't construct redirect URL"),
 
-            authorize_url: authentik_url
-                .join("application/o/authorize/")
-                .expect("Could not construct Authentik authorize endpoint"),
-
-            token_url: authentik_url
-                .join("application/o/token/")
-                .expect("Could not construct Authentik token endpoint"),
-
-            authentik_api: authentik_url
+            applications_endpoint: authentik_url
                 .join("api/v3/core/applications/")
                 .expect("Could not construct Authentik API URL"),
-
-            userinfo: authentik_url
-                .join("application/o/userinfo/")
-                .expect("Could not construct userinfo endpoint"),
-
-            logout: authentik_url
-                .join(format!("application/o/{syn_provider}/end-session/").as_str())
-                .expect("Could not construct logout endpoint"),
 
             port,
         }
@@ -321,8 +294,8 @@ fn get_oauth_client() -> BasicClient {
     BasicClient::new(
         ClientId::new(config.client_id.clone()),
         Some(ClientSecret::new(config.client_secret.clone())),
-        AuthUrl::new(config.authorize_url.to_string()).unwrap(),
-        Some(TokenUrl::new(config.token_url.to_string()).unwrap()),
+        AuthUrl::new(config.openid.authorization_endpoint.to_string()).unwrap(),
+        Some(TokenUrl::new(config.openid.token_endpoint.to_string()).unwrap()),
     )
     .set_redirect_uri(RedirectUrl::new(config.redirect_url.to_string()).unwrap())
 }

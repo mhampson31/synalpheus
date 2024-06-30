@@ -123,7 +123,7 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
         let config = get_config();
 
         let mut response = client
-            .get(config.authentik_api.to_string())
+            .get(config.applications_endpoint.to_string())
             .bearer_auth(token.access_token().secret())
             .send()
             .await
@@ -241,7 +241,7 @@ pub async fn login_authorized(
     let user_data: User = {
         // Wrapping this in an expression because we only need mutability for a moment
         let mut ud = client
-            .get(config.userinfo.clone())
+            .get(config.openid.userinfo_endpoint.clone())
             .bearer_auth(token.access_token().secret())
             .send()
             .await
@@ -270,7 +270,7 @@ pub async fn login_authorized(
 pub async fn logout(session: &Session) -> Redirect {
     let config = get_config();
     session.purge();
-    Redirect::permanent(config.logout.clone())
+    Redirect::permanent(config.openid.end_session_endpoint.clone())
 }
 
 #[handler]
