@@ -74,19 +74,11 @@ struct OpenID {
 }
 
 #[cfg(not(test))]
-fn get_openid() -> Result<OpenID> {
+fn get_openid(well_known: Url) -> Result<OpenID> {
     /* We'll get our OpenID endpoints from Authentik.
     To do this, we'll use a quick blocking task while we make the request to Authentik.
     This only happens on initial startup, so shouldn't be a big deal. */
     let openid = tokio::task::block_in_place(|| {
-        let well_known = authentik_url
-            .join(
-                format!("application/o/{syn_provider}/.well-known/openid-configuration")
-                    .to_lowercase() // The provider is probably uppercase, but the endpoint expects lowercase
-                    .as_str(),
-            )
-            .expect("Couldn't construct OpenID well-known endpoint");
-
         let openid = reqwest::blocking::get(well_known)
             .expect("Could not get OpenID config")
             .json::<OpenID>()
@@ -98,7 +90,7 @@ fn get_openid() -> Result<OpenID> {
 }
 
 #[cfg(test)]
-fn get_openid() -> Result<OpenID> {
+fn get_openid(_well_known: Url) -> Result<OpenID> {
     /* Dummy OpenID fields */
     let openid = OpenID {
         issuer: Url::parse("http://localhost").unwrap(),
@@ -166,7 +158,16 @@ impl Config {
         let syn_provider =
             dotenvy::var("SYN_PROVIDER").unwrap_or_else(|_| "Synalpheus".to_string());
 
-        let openid = get_openid().expect("Could not get OpenID configuration from Authentik");
+        let well_known = authentik_url
+            .join(
+                format!("application/o/{syn_provider}/.well-known/openid-configuration")
+                    .to_lowercase() // The provider is probably uppercase, but the endpoint expects lowercase
+                    .as_str(),
+            )
+            .expect("Couldn't construct OpenID well-known endpoint");
+
+        let openid =
+            get_openid(well_known).expect("Could not get OpenID configuration from Authentik");
 
         Config {
             authentik_url: authentik_url.clone(),
