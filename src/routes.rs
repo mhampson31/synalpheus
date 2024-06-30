@@ -122,8 +122,13 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
 
         let config = get_config();
 
+        let applications_endpoint = config
+            .authentik_url
+            .join("api/v3/core/applications/")
+            .expect("Could not construct Authentik API URL");
+
         let mut response = client
-            .get(config.authentik_api.to_string())
+            .get(applications_endpoint)
             .bearer_auth(token.access_token().secret())
             .send()
             .await
@@ -241,7 +246,7 @@ pub async fn login_authorized(
     let user_data: User = {
         // Wrapping this in an expression because we only need mutability for a moment
         let mut ud = client
-            .get(config.userinfo.clone())
+            .get(config.openid.userinfo_endpoint.clone())
             .bearer_auth(token.access_token().secret())
             .send()
             .await
@@ -270,7 +275,7 @@ pub async fn login_authorized(
 pub async fn logout(session: &Session) -> Redirect {
     let config = get_config();
     session.purge();
-    Redirect::permanent(config.logout.clone())
+    Redirect::permanent(config.openid.end_session_endpoint.clone())
 }
 
 #[handler]
@@ -469,15 +474,18 @@ mod tests {
     use crate::tests::load_test_app;
     use poem::test::TestClient;
 
+    /* Remember to use flavor = "multi_thread" for any tests that use CONFIG (even indirectly).
+    This is because we use block_in_place to construct that, which requires multithreading. */
+
     /* We expect the main index to be generally reachable */
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn can_reach_index() {
         let client = TestClient::new(load_test_app());
         client.get("/").send().await.assert_status_is_ok();
     }
 
     /* We expect the login page to redirect to Authentik */
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn can_reach_login() {
         let client = TestClient::new(load_test_app());
         client
@@ -488,7 +496,7 @@ mod tests {
     }
 
     /* We expect the logout page to redirect back home */
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn can_reach_logout() {
         let client = TestClient::new(load_test_app());
         client
@@ -499,7 +507,7 @@ mod tests {
     }
 
     /* We expect the OAuth redirect URL to respond to, but not handle, random get requests. */
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn can_reach_redirect() {
         let config = get_config();
         let redirect_path = config.redirect_path.clone();

@@ -61,23 +61,74 @@ pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
     tera
 });
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct OpenID {
+    issuer: Url,
+    authorization_endpoint: Url,
+    token_endpoint: Url,
+    userinfo_endpoint: Url,
+    end_session_endpoint: Url,
+    introspection_endpoint: Url,
+    revocation_endpoint: Url,
+    device_authorization_endpoint: Url,
+}
+
+#[cfg(not(test))]
+fn get_openid(well_known: Url) -> Result<OpenID> {
+    /* We'll get our OpenID endpoints from Authentik.
+    To do this, we'll use a quick blocking task while we make the request to Authentik.
+    This only happens on initial startup, so shouldn't be a big deal. */
+    let openid = tokio::task::block_in_place(|| {
+        let openid = reqwest::blocking::get(well_known)
+            .expect("Could not get OpenID config")
+            .json::<OpenID>()
+            .expect("Could not parse OpenID response");
+
+        openid
+    });
+    Ok(openid)
+}
+
+#[cfg(test)]
+fn get_openid(_well_known: Url) -> Result<OpenID> {
+    /* Dummy OpenID fields */
+    let openid = OpenID {
+        issuer: Url::parse("http://localhost").unwrap(),
+        authorization_endpoint: Url::parse("http://localhost").unwrap(),
+        token_endpoint: Url::parse("http://localhost").unwrap(),
+        userinfo_endpoint: Url::parse("http://localhost").unwrap(),
+        end_session_endpoint: Url::parse("http://localhost").unwrap(),
+        introspection_endpoint: Url::parse("http://localhost").unwrap(),
+        revocation_endpoint: Url::parse("http://localhost").unwrap(),
+        device_authorization_endpoint: Url::parse("http://localhost").unwrap(),
+    };
+    Ok(openid)
+}
+
 /* This largely holds our Authentik information */
 pub static CONFIG: OnceLock<Config> = OnceLock::new();
 
 #[derive(Debug)]
 pub struct Config {
+    // Our Authentik URL
     authentik_url: Url,
+
+    // Our Synalpheus URL
+    synalpheus_url: Url,
+
+    // The port we're running on
+    port: u16,
+
+    // The name of the provider created for Synalpheus in Authentik
     syn_provider: String,
+
+    // A structure containing all our OpenID endpoints
+    openid: OpenID,
+
+    // Our Oauth2 configuration info
     client_id: String,
     client_secret: String,
     redirect_path: String,
-    redirect_url: Url,
-    authorize_url: Url,
-    token_url: Url,
-    authentik_api: Url,
-    logout: Url,
-    userinfo: Url,
-    port: u16,
 }
 
 impl Config {
@@ -101,15 +152,29 @@ impl Config {
         let authentik_url =
             Url::parse(authentik_url.as_str()).expect("SYN_AUTHENTIK_URL is not a parsable URL");
 
-        let redirect_path = dotenvy::var("SYN_REDIRECT_PATH").expect("Missing SYN_REDIRECT_PATH");
+        let redirect_path =
+            dotenvy::var("SYN_REDIRECT_PATH").unwrap_or_else(|_| "auth/authentik".to_string());
 
         let syn_provider =
             dotenvy::var("SYN_PROVIDER").unwrap_or_else(|_| "Synalpheus".to_string());
+
+        let well_known = authentik_url
+            .join(
+                format!("application/o/{syn_provider}/.well-known/openid-configuration")
+                    .to_lowercase() // The provider is probably uppercase, but the endpoint expects lowercase
+                    .as_str(),
+            )
+            .expect("Couldn't construct OpenID well-known endpoint");
+
+        let openid =
+            get_openid(well_known).expect("Could not get OpenID configuration from Authentik");
 
         Config {
             authentik_url: authentik_url.clone(),
 
             syn_provider: syn_provider.clone(),
+
+            openid: openid.clone(),
 
             client_id: env::var("SYN_CLIENT_ID").expect("Missing SYN_CLIENT_ID!"),
 
@@ -117,33 +182,7 @@ impl Config {
 
             redirect_path: redirect_path.clone(),
 
-            redirect_url: synalpheus_url
-                .join(redirect_path.as_str())
-                .expect("Couldn't construct redirect URL"),
-
-            authorize_url: authentik_url
-                .join("application/o/authorize/")
-                .expect("Could not construct Authentik authorize endpoint"),
-
-            token_url: authentik_url
-                .join("application/o/token/")
-                .expect("Could not construct Authentik token endpoint"),
-
-            authentik_api: authentik_url
-                .join("api/v3/core/applications/")
-                .expect("Could not construct Authentik API URL"),
-
-            userinfo: authentik_url
-                .join("application/o/userinfo/")
-                .expect("Could not construct userinfo endpoint"),
-
-            logout: authentik_url
-                .join(
-                    format!("application/o/{syn_provider}/end-session/")
-                        .to_lowercase()
-                        .as_str(),
-                )
-                .expect("Could not construct logout endpoint"),
+            synalpheus_url: synalpheus_url.clone(),
 
             port,
         }
@@ -280,13 +319,18 @@ async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
 fn get_oauth_client() -> BasicClient {
     let config = CONFIG.get_or_init(Config::new);
 
+    let redirect_url = config
+        .synalpheus_url
+        .join(config.redirect_path.as_str())
+        .expect("Couldn't construct redirect URL");
+
     BasicClient::new(
         ClientId::new(config.client_id.clone()),
         Some(ClientSecret::new(config.client_secret.clone())),
-        AuthUrl::new(config.authorize_url.to_string()).unwrap(),
-        Some(TokenUrl::new(config.token_url.to_string()).unwrap()),
+        AuthUrl::new(config.openid.authorization_endpoint.to_string()).unwrap(),
+        Some(TokenUrl::new(config.openid.token_endpoint.to_string()).unwrap()),
     )
-    .set_redirect_uri(RedirectUrl::new(config.redirect_url.to_string()).unwrap())
+    .set_redirect_uri(RedirectUrl::new(redirect_url.to_string()).unwrap())
 }
 
 #[derive(Debug, Serialize, Deserialize)]
