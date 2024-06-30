@@ -465,8 +465,73 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
     use poem::session::CookieSession;
+
+    impl Config {
+        /* We're basically reimplementing Config::new() as Config::test(), mainly to handle the OpenID config */
+
+        pub fn test() -> Config {
+            /* Set up what we need to run Synalpheus */
+
+            let synalpheus_url =
+                Url::parse(dotenvy::var("SYN_URL").expect("Missing SYN_URL").as_str())
+                    .expect("SYN_URL is not a parsable URL");
+
+            let port: u16 = match dotenvy::var("SYN_PORT") {
+                Ok(p) => p.parse().expect("SYN_PORT is not a valid port number"),
+                Err(_) => 80,
+            };
+
+            /* Set up what we need to talk to Authentik */
+            let authentik_url =
+                dotenvy::var("SYN_AUTHENTIK_URL").expect("Missing SYN_AUTHENTIK_URL");
+            let authentik_url = Url::parse(authentik_url.as_str())
+                .expect("SYN_AUTHENTIK_URL is not a parsable URL");
+
+            let redirect_path =
+                dotenvy::var("SYN_REDIRECT_PATH").unwrap_or_else(|_| "auth/authentik".to_string());
+
+            let syn_provider =
+                dotenvy::var("SYN_PROVIDER").unwrap_or_else(|_| "Synalpheus".to_string());
+
+            /* Dummy OpenID fields */
+            let openid = OpenID {
+                issuer: Url::from_str("http://localhost").unwrap(),
+                authorization_endpoint: Url::from_str("http://localhost").unwrap(),
+                token_endpoint: Url::from_str("http://localhost").unwrap(),
+                userinfo_endpoint: Url::from_str("http://localhost").unwrap(),
+                end_session_endpoint: Url::from_str("http://localhost").unwrap(),
+                introspection_endpoint: Url::from_str("http://localhost").unwrap(),
+                revocation_endpoint: Url::from_str("http://localhost").unwrap(),
+                device_authorization_endpoint: Url::from_str("http://localhost").unwrap(),
+            };
+
+            Config {
+                authentik_url: authentik_url.clone(),
+
+                syn_provider: syn_provider.clone(),
+
+                openid: openid.clone(),
+
+                client_id: env::var("SYN_CLIENT_ID").expect("Missing SYN_CLIENT_ID!"),
+
+                client_secret: env::var("SYN_CLIENT_SECRET").expect("Missing SYN_CLIENT_SECRET!"),
+
+                redirect_path: redirect_path.clone(),
+
+                synalpheus_url: synalpheus_url.clone(),
+
+                port,
+            }
+        }
+    }
+
+    pub fn get_test_config() -> &'static Config {
+        CONFIG.get_or_init(Config::test)
+    }
 
     /* A helper function that mocks a response from Authentik, not a test itself */
     fn load_sample_apps_response() -> Result<AppResponse, serde_json::Error> {
@@ -535,7 +600,7 @@ mod tests {
             null_icon: String,
         }
 
-        let config = get_config();
+        let config = get_test_config();
         let control = IconURLTester {
             icon: format!("{}/test.png", config.authentik_url),
             null_icon: "".to_string(),
