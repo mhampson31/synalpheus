@@ -334,7 +334,7 @@ pub async fn local_app_create(
         name: Set(name),
         slug: Set(slug),
         launch_url: Set(launch_url),
-        icon: Set(Some(icon)),
+        icon: NotSet,
         description: Set(Some(description)),
         group: Set(Some(group)),
         id: NotSet,
