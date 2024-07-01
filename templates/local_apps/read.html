@@ -1,11 +1,11 @@
-<tr>
-    <td>{{app.name}}</td>
-    <td>{{app.slug}}</td>
-    <td>{{app.icon}}</td>
-    <td>{{app.group}}</td>
-    <td>{{app.description}}</td>
-    <td>{{app.launch_url}}</td>
-    <td>
+<div>
+    <p>{{app.name}}</p>
+    <p>{{app.slug}}</p>
+    <p>{{app.icon}}</p>
+    <p>{{app.group}}</p>
+    <p>{{app.description}}</p>
+    <p>{{app.launch_url}}</p>
+    <p>
         <button class="button is-primary" hx-get="/local-apps/{{app.id}}/edit" hx-trigger="click" _="on click
         trigger edit">
             <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 512 512">
@@ -18,8 +18,8 @@
             </svg>
             Edit
         </button>
-    </td>
-    <td>
+    </p>
+    <p>
         <button class="button is-danger" hx-confirm="Delete this app?" hx-delete="/local-apps/{{app.id}}">
             <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 384 512">
                 <!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com
@@ -31,5 +31,5 @@
             </svg>
             Delete
         </button>
-    </td>
-</tr>
+    </p>
+</div>

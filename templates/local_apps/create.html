@@ -1,11 +1,11 @@
-<tr hx-trigger='cancel' class='editing'>
-    <td><input name='name' class="input"></td>
-    <td><input name='slug' class="input"></td>
-    <td><input name='icon' class="input"></td>
-    <td><input name='group' class="input"></td>
-    <td><input name='description' class="input"></td>
-    <td><input name='launch_url' class="input"></td>
-    <td>
+<div hx-trigger='cancel' class='editing'>
+    <p><input name='name' class="input"></p>
+    <p><input name='slug' class="input"></p>
+    <p><input name='icon' class="input"></p>
+    <p><input name='group' class="input"></p>
+    <p><input name='description' class="input"></p>
+    <p><input name='launch_url' class="input"></p>
+    <p>
         <input name="source" type="hidden" value="Local" />
         <button class="button is-warning" _="on click send newApp to #local-apps">
             <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 512 512">
@@ -18,9 +18,9 @@
             </svg>
             Cancel
         </button>
-    </td>
-    <td>
-        <button class="button is-primary" hx-trigger="click" hx-post="/local-apps" hx-include="closest tr">
+    </p>
+    <p>
+        <button class="button is-primary" hx-trigger="click" hx-post="/local-apps" hx-include="closest div">
             <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 448 512">
                 <!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com
                     License - https://fontawesome.com/license (Commercial License)
@@ -31,6 +31,5 @@
             </svg>
             Save
         </button>
-    </td>
-    <td></td>
-</tr>
+    </p>
+</div>
