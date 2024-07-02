@@ -1,11 +1,11 @@
-<div hx-trigger='cancel' class='editing' hx-get="/local-apps/{{app.id}}">
+<section hx-trigger='cancel' class='section editing' hx-get="/local-apps/{{app.id}}">
     <p><input name='name' class='input' value='{{app.name}}'></p>
     <p><input name='slug' class='input' value='{{app.slug}}'></p>
     <p><input name='icon' class='input' value='{{app.icon}}'></p>
     <p><input name='group' class='input' value='{{app.group}}'></p>
     <p><input name='description' class='input' value='{{app.description}}'></p>
     <p><input name='launch_url' class='input' value='{{app.launch_url}}'></p>
-    <p>
+    <div>
         <input name="source" type="hidden" value="Local" />
         <button class="button is-warning" hx-trigger="click" hx-get="/local-apps/{{app.id}}">
             <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 512 512">
@@ -18,9 +18,8 @@
             </svg>
             Cancel
         </button>
-    </p>
-    <p>
-        <button class="button is-primary" hx-trigger="click" hx-put="/local-apps/{{app.id}}" hx-include="closest div">
+        <button class="button is-primary" hx-trigger="click" hx-put="/local-apps/{{app.id}}"
+            hx-include="closest section">
             <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 448 512">
                 <!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com
                     License - https://fontawesome.com/license (Commercial License)
@@ -31,5 +30,5 @@
             </svg>
             Save
         </button>
-    </p>
-</div>
+    </div>
+</section>
