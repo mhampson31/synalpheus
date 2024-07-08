@@ -7,7 +7,7 @@ use poem::{
     handler,
     http::StatusCode,
     session::Session,
-    web::{Form, Html, Path, Query, Redirect},
+    web::{Form, Html, Multipart, Path, Query, Redirect},
     IntoResponse, Response, Result,
 };
 use sea_orm::{
@@ -464,6 +464,95 @@ pub async fn local_app_delete(id: Path<u8>) -> Result<impl IntoResponse> {
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     };
     Ok(Response::builder().status(status).body(()))
+}
+
+#[handler]
+pub async fn local_app_photo_read(id: Path<u8>) -> Result<impl IntoResponse> {
+    Ok(Response::builder().status(StatusCode::NO_CONTENT).body(()))
+}
+
+#[handler]
+pub async fn local_app_photo_update(
+    id: Path<u8>,
+    mut multipart: Multipart,
+) -> Result<impl IntoResponse> {
+    let db = get_db();
+
+    let mut context = Context::new();
+
+    if let Some(app) = LocalApp::Entity::find_by_id(id.0)
+        .one(db)
+        .await
+        .map_err(InternalServerError)?
+    {
+        let mut app: LocalApp::ActiveModel = app.into();
+
+        /*app.name = Set(name);
+        app.slug = Set(slug);
+        app.launch_url = Set(launch_url);
+        app.icon = Set(Some(icon));
+        app.description = Set(Some(description));
+        app.group = Set(Some(group));*/
+
+        while let Ok(Some(field)) = multipart.next_field().await {
+            if let Ok(text) = field.text().await {
+                let name = field.name();
+                //println!("name={:?} text={}", name, text);
+                match name {
+                    Some("name") => {
+                        app.name = Set(text);
+                    }
+                    Some("slug") => {
+                        app.slug = Set(text);
+                    }
+                    Some("launch_url") => {
+                        app.launch_url = Set(text);
+                    }
+                    Some("icon") => {
+                        app.icon =
+                            if let Some(file_name) = field.file_name().map(ToString::to_string) {
+                                Set(Some(file_name))
+                            } else {
+                                NotSet
+                            }
+                    }
+                    Some("description") => {
+                        app.description = Set(Some(text));
+                    }
+                    Some("group") => {
+                        app.group = Set(Some(text));
+                    }
+                    _ => continue,
+                };
+            }
+        }
+        /*
+                    app.name = Set(name);
+                    app.slug = Set(slug);
+                    app.launch_url = Set(launch_url);
+                    app.icon = Set(Some(icon));
+                    app.description = Set(Some(description));
+                    app.group = Set(Some(group));
+
+            let app: LocalApp::Model = app.update(db).await.map_err(InternalServerError)?;
+
+            context.insert("app", &app);
+
+            let response = TEMPLATES
+                .render("local_app_read.html", &context)
+                .map_err(InternalServerError)?;
+            Ok(Html(response).into_response())
+        } else {
+            Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
+        }
+        */
+    }
+    Ok(Response::builder().status(StatusCode::NO_CONTENT).body(()))
+}
+
+#[handler]
+pub async fn local_app_photo_delete(id: Path<u8>) -> Result<impl IntoResponse> {
+    Ok(Response::builder().status(StatusCode::NO_CONTENT).body(()))
 }
 
 /* *** TESTS *** */

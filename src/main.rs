@@ -244,6 +244,13 @@ fn create_app() -> impl Endpoint {
             get(routes::local_app_edit).with(middleware::RequireAdmin),
         )
         .at(
+            "/local-apps/:1/photo",
+            get(routes::local_app_photo_read)
+                .put(routes::local_app_photo_update)
+                .delete(routes::local_app_photo_delete)
+                .with(middleware::RequireAdmin),
+        )
+        .at(
             "/local-apps/new",
             get(routes::local_app_new).with(middleware::RequireAdmin),
         )

@@ -12,7 +12,7 @@
 
         <div class="field">
             <label class="label">Icon</label>
-            <input name='icon' class="input" value='{{app.icon}}'>
+            <input name='icon' type="file" class="input" value='{{app.icon}}'>
         </div>
 
         <div class="field">
@@ -42,8 +42,8 @@
                 </svg>
                 Cancel
             </button>
-            <button class="button is-primary" hx-trigger="click" hx-put="/local-apps/{{app.id}}"
-                hx-include="closest section">
+            <button class="button is-primary" hx-trigger="click" hx-put="/local-apps/{{app.id}}/photo"
+                hx-encoding="multipart/form-data" hx-include="closest form">
                 <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 448 512">
                     <!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com
                     License - https://fontawesome.com/license (Commercial License)
