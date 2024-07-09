@@ -466,6 +466,28 @@ pub async fn local_app_delete(id: Path<u8>) -> Result<impl IntoResponse> {
     Ok(Response::builder().status(status).body(()))
 }
 
+#[handler]
+pub async fn get_icon_form(id: Path<u8>) -> Result<impl IntoResponse> {
+    let db = get_db();
+
+    let mut context = Context::new();
+
+    if let Some(app) = LocalApp::Entity::find_by_id(id.0)
+        .one(db)
+        .await
+        .map_err(InternalServerError)?
+    {
+        context.insert("app", &app);
+
+        let response = TEMPLATES
+            .render("icon_form.html", &context)
+            .map_err(InternalServerError)?;
+        Ok(Html(response).into_response())
+    } else {
+        Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
+    }
+}
+
 /* *** TESTS *** */
 
 #[cfg(test)]

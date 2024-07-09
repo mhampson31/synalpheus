@@ -32,7 +32,8 @@
                         </svg>
                         Delete
                     </button>
-                    <button class="button is-info" hx-get="/local-apps/icon-form/{{app.id}}">
+                    <button class="button is-info" hx-get="/local-apps/icon-form/{{app.id}}" hx-target="body"
+                        hx-swap="beforeend">
                         <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 384 512">
                             <!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com
                                 License - https://fontawesome.com/license (Commercial License)
