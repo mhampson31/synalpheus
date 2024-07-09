@@ -488,6 +488,23 @@ pub async fn get_icon_form(id: Path<u8>) -> Result<impl IntoResponse> {
     }
 }
 
+#[handler]
+pub async fn post_icon_form(id: Path<u8>) -> Result<impl IntoResponse> {
+    let db = get_db();
+
+    let mut context = Context::new();
+
+    if let Some(app) = LocalApp::Entity::find_by_id(id.0)
+        .one(db)
+        .await
+        .map_err(InternalServerError)?
+    {
+        context.insert("app", &app);
+    }
+
+    Ok(Response::builder().status(StatusCode::NO_CONTENT).body(()))
+}
+
 /* *** TESTS *** */
 
 #[cfg(test)]

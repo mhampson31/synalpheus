@@ -253,7 +253,9 @@ fn create_app() -> impl Endpoint {
         )
         .at(
             "/local-apps/icon-form/:1",
-            get(routes::get_icon_form).with(middleware::RequireAdmin),
+            get(routes::get_icon_form)
+                .post(routes::post_icon_form)
+                .with(middleware::RequireAdmin),
         )
         .at(
             "/local-apps",
