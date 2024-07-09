@@ -7,7 +7,7 @@ use poem::{
     handler,
     http::StatusCode,
     session::Session,
-    web::{Form, Html, Path, Query, Redirect},
+    web::{Form, Html, Multipart, Path, Query, Redirect},
     IntoResponse, Response, Result,
 };
 use sea_orm::{
@@ -18,7 +18,10 @@ use sea_orm::{
 use serde::Deserialize;
 use tera::Context;
 
-use std::time::{Duration, SystemTime};
+use std::{
+    fs::rename,
+    time::{Duration, SystemTime},
+};
 
 use super::{get_config, get_db, get_oauth_client, AppCard, AppResponse, User, TEMPLATES};
 
@@ -489,7 +492,7 @@ pub async fn get_icon_form(id: Path<u8>) -> Result<impl IntoResponse> {
 }
 
 #[handler]
-pub async fn post_icon_form(id: Path<u8>) -> Result<impl IntoResponse> {
+pub async fn post_icon_form(id: Path<u8>, mut multipart: Multipart) -> Result<impl IntoResponse> {
     let db = get_db();
 
     let mut context = Context::new();
@@ -500,6 +503,19 @@ pub async fn post_icon_form(id: Path<u8>) -> Result<impl IntoResponse> {
         .map_err(InternalServerError)?
     {
         context.insert("app", &app);
+    }
+
+    while let Ok(Some(field)) = multipart.next_field().await {
+        let name = field.name().map(ToString::to_string);
+        let file_name = field.file_name().map(ToString::to_string);
+        if let Ok(bytes) = field.bytes().await {
+            println!(
+                "name={:?} filename={:?} length={}",
+                name,
+                file_name,
+                bytes.len()
+            );
+        }
     }
 
     Ok(Response::builder().status(StatusCode::NO_CONTENT).body(()))

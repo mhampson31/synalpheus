@@ -16,6 +16,7 @@ once_cell = "1.19"
 poem = { version = "3.0", features = [
     "session",
     "csrf",
+    "multipart",
     "redis-session",
     "test",
     "static-files",

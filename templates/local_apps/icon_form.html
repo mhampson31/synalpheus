@@ -2,16 +2,17 @@
     <div class="modal-background"></div>
     <div class="modal-card">
         <header class="modal-card-head">
-            <p class="modal-card-title">Modal title</p>
+            <p class="modal-card-title">Select Icon</p>
         </header>
         <section class="modal-card-body">
-            <form id='form' hx-encoding='multipart/form-data' hx-post='/local-apps/icon-form/{{app.id}}'>
-
+            <form id='icon-form-{{app.id}}' hx-encoding='multipart/form-data'
+                hx-post='/local-apps/icon-form/{{app.id}}'>
+                <input type='file' name='file'>
             </form>
         </section>
         <footer class="modal-card-foot">
             <div class="buttons">
-                <button class="button is-success">Save changes</button>
+                <button class="button is-success" form="icon-form-{{app.id}}">Save changes</button>
                 <button class="button"
                     _="on click remove .is-active from #icon-form then remove #icon-form">Cancel</button>
             </div>
