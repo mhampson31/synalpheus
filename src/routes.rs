@@ -19,7 +19,9 @@ use serde::Deserialize;
 use tera::Context;
 
 use std::{
-    fs::rename,
+    fs::File,
+    io::Write,
+    path::Path as std_path,
     time::{Duration, SystemTime},
 };
 
@@ -515,6 +517,9 @@ pub async fn post_icon_form(id: Path<u8>, mut multipart: Multipart) -> Result<im
                 file_name,
                 bytes.len()
             );
+            let path = std_path::new("media/application-icons").join(file_name.unwrap());
+            let mut file = File::create(path).map_err(InternalServerError)?;
+            file.write(&bytes).map_err(InternalServerError)?;
         }
     }
 
