@@ -526,7 +526,7 @@ pub async fn post_icon_form(id: Path<u8>, mut multipart: Multipart) -> Result<im
 
                 let path = std_path::new(&location).join(file_name.unwrap());
 
-                app.icon = Set(Some(location.clone()));
+                app.icon = Set(Some(path.clone().into_os_string().into_string().unwrap()));
 
                 let mut file = File::create(path).map_err(InternalServerError)?;
                 file.write(&bytes).map_err(InternalServerError)?;

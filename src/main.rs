@@ -230,9 +230,9 @@ fn create_app() -> impl Endpoint {
             "favicon.svg",
             StaticFileEndpoint::new("assets/images/favicon/favicon.svg"),
         )
-        .at(
+        .nest(
             "media/application-icons",
-            StaticFilesEndpoint::new("/media/application-icons").show_files_listing(),
+            StaticFilesEndpoint::new("media/application-icons").show_files_listing(),
         )
         // page routes
         .at("/", get(routes::index))
