@@ -8,6 +8,7 @@
                 <p>Group: {{app.group}}</p>
                 <p>Description: {{app.description}}</p>
                 <p>URL: {{app.launch_url}}</p>
+                <p>Icon: {{app.icon}}</p>
                 <div>
                     <button class="button is-primary" hx-get="/local-apps/{{app.id}}/edit" hx-trigger="click" _="on click
                          trigger edit">

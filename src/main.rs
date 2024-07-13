@@ -2,7 +2,7 @@ use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, T
 use once_cell::sync::Lazy;
 
 use poem::{
-    endpoint::StaticFileEndpoint,
+    endpoint::{StaticFileEndpoint, StaticFilesEndpoint},
     error::{InternalServerError, NotFoundError},
     get,
     http::StatusCode,
@@ -229,6 +229,10 @@ fn create_app() -> impl Endpoint {
         .at(
             "favicon.svg",
             StaticFileEndpoint::new("assets/images/favicon/favicon.svg"),
+        )
+        .at(
+            "media/application-icons",
+            StaticFilesEndpoint::new("/media/application-icons").show_files_listing(),
         )
         // page routes
         .at("/", get(routes::index))

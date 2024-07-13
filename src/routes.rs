@@ -504,26 +504,41 @@ pub async fn post_icon_form(id: Path<u8>, mut multipart: Multipart) -> Result<im
         .await
         .map_err(InternalServerError)?
     {
-        context.insert("app", &app);
-    }
+        // grab the slug now while it's easy, before we convert the query result into an ActiveModel
+        let slug = app.slug.clone();
+        let mut app: LocalApp::ActiveModel = app.into();
 
-    while let Ok(Some(field)) = multipart.next_field().await {
-        let name = field.name().map(ToString::to_string);
-        let file_name = field.file_name().map(ToString::to_string);
-        if let Ok(bytes) = field.bytes().await {
-            println!(
-                "name={:?} filename={:?} length={}",
-                name,
-                file_name,
-                bytes.len()
-            );
-            let path = std_path::new("media/application-icons").join(file_name.unwrap());
-            let mut file = File::create(path).map_err(InternalServerError)?;
-            file.write(&bytes).map_err(InternalServerError)?;
+        while let Ok(Some(field)) = multipart.next_field().await {
+            let name = field.name().map(ToString::to_string);
+            let file_name = field.file_name().map(ToString::to_string);
+            if let Ok(bytes) = field.bytes().await {
+                println!(
+                    "name={:?} filename={:?} length={}",
+                    name,
+                    file_name,
+                    bytes.len()
+                );
+
+                let location = format!("media/application-icons/{0}", slug);
+
+                // Create an icon directory for the app if it doesn't already have one
+                std::fs::create_dir_all(location.clone()).map_err(InternalServerError)?;
+
+                let path = std_path::new(&location).join(file_name.unwrap());
+
+                app.icon = Set(Some(location.clone()));
+
+                let mut file = File::create(path).map_err(InternalServerError)?;
+                file.write(&bytes).map_err(InternalServerError)?;
+            }
         }
-    }
 
-    Ok(Response::builder().status(StatusCode::NO_CONTENT).body(()))
+        app.update(db).await.map_err(InternalServerError)?;
+
+        Ok(Response::builder().status(StatusCode::NO_CONTENT).body(()))
+    } else {
+        Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
+    }
 }
 
 /* *** TESTS *** */
