@@ -532,7 +532,7 @@ pub async fn post_icon_form(id: Path<u8>, mut multipart: Multipart) -> Result<im
         app.update(db).await.map_err(InternalServerError)?;
         Ok(Response::builder()
             .status(StatusCode::NO_CONTENT)
-            .header("HX-Trigger", "iconSaved")
+            .header("HX-Trigger", format!("iconSaved_{0}", id.0))
             .body(()))
     } else {
         Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
