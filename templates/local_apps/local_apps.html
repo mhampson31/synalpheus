@@ -1,7 +1,7 @@
 <div id="app-list">
     <div hx-target="closest section" hx-swap="outerHTML">
         {% for app in applications %}
-        <section class="section" hx-get="/local-apps/{{app.id}}" hx-trigger="load,iconSaved">
+        <section class="section" hx-get="/local-apps/{{app.id}}" hx-trigger="load">
         </section>
         {% endfor %}
 

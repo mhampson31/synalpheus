@@ -1,4 +1,4 @@
-<section class="section">
+<section id="local-{{app.id}}" class="section" hx-get="/local-apps/{{app.id}}" hx-trigger="iconSaved from:body">
     <div class="box">
         <p>Name: {{app.name}}</p>
         <p>Slug: {{app.slug}}</p>
