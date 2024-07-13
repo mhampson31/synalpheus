@@ -504,29 +504,25 @@ pub async fn post_icon_form(id: Path<u8>, mut multipart: Multipart) -> Result<im
         .await
         .map_err(InternalServerError)?
     {
-        // grab the slug now while it's easy, before we convert the query result into an ActiveModel
-        let slug = app.slug.clone();
         let mut app: LocalApp::ActiveModel = app.into();
 
         while let Ok(Some(field)) = multipart.next_field().await {
             let name = field.name().map(ToString::to_string);
             let file_name = field.file_name().map(ToString::to_string);
             if let Ok(bytes) = field.bytes().await {
-                println!(
-                    "name={:?} filename={:?} length={}",
-                    name,
-                    file_name,
-                    bytes.len()
-                );
+                // Where does this app keep its icon files?
+                let location = format!("media/application-icons/{0}", id.0);
 
-                let location = format!("media/application-icons/{0}", slug);
-
-                // Create an icon directory for the app if it doesn't already have one
+                // Create the icon directory for the app if it doesn't already have one
                 std::fs::create_dir_all(location.clone()).map_err(InternalServerError)?;
 
+                // Construct the full path where we'll upload the icon file, keeping the filename intact
                 let path = std_path::new(&location).join(file_name.unwrap());
 
-                app.icon = Set(Some(path.clone().into_os_string().into_string().unwrap()));
+                app.icon =
+                    Set(Some(path.clone().into_os_string().into_string().expect(
+                        "Could not convert the icon image path to UTF-8 string",
+                    )));
 
                 let mut file = File::create(path).map_err(InternalServerError)?;
                 file.write(&bytes).map_err(InternalServerError)?;
