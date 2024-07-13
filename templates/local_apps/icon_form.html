@@ -8,7 +8,7 @@
         <section class="modal-card-body">
             <form id='icon-form-{{app.id}}' hx-encoding='multipart/form-data'
                 hx-post='/local-apps/icon-form/{{app.id}}'>
-                <input type='file' name='file'>
+                <input type='file' name='file' required>
             </form>
         </section>
         <footer class="modal-card-foot">
