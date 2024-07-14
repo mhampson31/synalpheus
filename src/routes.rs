@@ -506,8 +506,8 @@ pub async fn post_icon_form(id: Path<u8>, mut multipart: Multipart) -> Result<im
     {
         let mut app: LocalApp::ActiveModel = app.into();
 
+        // There should only be one field in the form
         while let Ok(Some(field)) = multipart.next_field().await {
-            let name = field.name().map(ToString::to_string);
             let file_name = field.file_name().map(ToString::to_string);
             if let Ok(bytes) = field.bytes().await {
                 // Where does this app keep its icon files?

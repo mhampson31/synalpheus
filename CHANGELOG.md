@@ -5,6 +5,9 @@ What's new in Synalpheus?
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.4.3] - 2024-07-13
+- Added the ability to upload icons for locally-managed applications
+
 ## [v0.4.2] - 2024-06-30
 - Now uses Authentik's OIDC .well-known endpoint for OAuth2 configuration
 - Brought the sample .env file up to date

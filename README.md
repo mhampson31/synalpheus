@@ -13,12 +13,8 @@ What works as of v0.4?
 * Docker integration
 * Storing info about applications you're not managing via Authentik in your Postgres database
 
-Future work:
-* User-added bookmark links
-* Substantial prettification
-
 Setup:
-1. Ensure you have a working Authentik setup (version 2022.7 or later)
+1. Ensure you have a working Authentik setup (version 2024.6 or later is required)
 2. Add a new OAuth2 app in your Authentik environment for Synalpheus with the following scopes:
   * openid
   * profile
@@ -39,7 +35,8 @@ Setup:
     ports:
       - 8080:80
     volumes:
-      - /opt/appdata/synalpheus:/synalpheus
+      # Synalpheus will use this to store images files for any non-Authentik applications
+      - /opt/appdata/synalpheus:/media
     environment:
       PUID: ${PUID}
       PGUID: ${PGID}
