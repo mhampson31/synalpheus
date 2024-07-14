@@ -1,6 +1,8 @@
 # synalpheus
 Synalpheus is a dashboard that uses Authentik's APIs to automatically displaying the logged-in user's list of applications. This is all still very incomplete, but it is fairly functional already.
 
+![A screenshot of Synalpheus](/screenshot.png?raw=true "Synalpheus")
+
 Authentik does have a perfectly good dashboard built in. So why Synalpheus? Two reasons: First, in practical terms, I wanted a dashboard I could run on a different subdomain than Authentik. And second, this project is a personal learning exercise, to develop my understanding of the Rust ecosystem. Other features are planned.
 
 Synalpheus is not likely to work out of the box with other auth providers -- it expects to be able to make requests against an Authentik API, and deserialize the response according to its schema.
