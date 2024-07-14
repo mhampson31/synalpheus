@@ -2,7 +2,7 @@ use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, T
 use once_cell::sync::Lazy;
 
 use poem::{
-    endpoint::StaticFileEndpoint,
+    endpoint::{StaticFileEndpoint, StaticFilesEndpoint},
     error::{InternalServerError, NotFoundError},
     get,
     http::StatusCode,
@@ -53,6 +53,10 @@ pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
         (
             "templates/local_apps/update.html",
             Some("local_app_update.html"),
+        ),
+        (
+            "templates/local_apps/icon_form.html",
+            Some("icon_form.html"),
         ),
     ])
     .expect("Template files could not be loaded");
@@ -226,6 +230,10 @@ fn create_app() -> impl Endpoint {
             "favicon.svg",
             StaticFileEndpoint::new("assets/images/favicon/favicon.svg"),
         )
+        .nest(
+            "media/application-icons",
+            StaticFilesEndpoint::new("media/application-icons").show_files_listing(),
+        )
         // page routes
         .at("/", get(routes::index))
         .at("/login", get(routes::login))
@@ -246,6 +254,12 @@ fn create_app() -> impl Endpoint {
         .at(
             "/local-apps/new",
             get(routes::local_app_new).with(middleware::RequireAdmin),
+        )
+        .at(
+            "/local-apps/icon-form/:1",
+            get(routes::get_icon_form)
+                .post(routes::post_icon_form)
+                .with(middleware::RequireAdmin),
         )
         .at(
             "/local-apps",

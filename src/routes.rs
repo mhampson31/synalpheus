@@ -7,7 +7,7 @@ use poem::{
     handler,
     http::StatusCode,
     session::Session,
-    web::{Form, Html, Path, Query, Redirect},
+    web::{Form, Html, Multipart, Path, Query, Redirect},
     IntoResponse, Response, Result,
 };
 use sea_orm::{
@@ -18,7 +18,12 @@ use sea_orm::{
 use serde::Deserialize;
 use tera::Context;
 
-use std::time::{Duration, SystemTime};
+use std::{
+    fs::File,
+    io::Write,
+    path::Path as std_path,
+    time::{Duration, SystemTime},
+};
 
 use super::{get_config, get_db, get_oauth_client, AppCard, AppResponse, User, TEMPLATES};
 
@@ -464,6 +469,74 @@ pub async fn local_app_delete(id: Path<u8>) -> Result<impl IntoResponse> {
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     };
     Ok(Response::builder().status(status).body(()))
+}
+
+#[handler]
+pub async fn get_icon_form(id: Path<u8>) -> Result<impl IntoResponse> {
+    let db = get_db();
+
+    let mut context = Context::new();
+
+    if let Some(app) = LocalApp::Entity::find_by_id(id.0)
+        .one(db)
+        .await
+        .map_err(InternalServerError)?
+    {
+        context.insert("app", &app);
+
+        let response = TEMPLATES
+            .render("icon_form.html", &context)
+            .map_err(InternalServerError)?;
+        Ok(Html(response).into_response())
+    } else {
+        Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
+    }
+}
+
+#[handler]
+pub async fn post_icon_form(id: Path<u8>, mut multipart: Multipart) -> Result<impl IntoResponse> {
+    let db = get_db();
+
+    let mut context = Context::new();
+
+    if let Some(app) = LocalApp::Entity::find_by_id(id.0)
+        .one(db)
+        .await
+        .map_err(InternalServerError)?
+    {
+        let mut app: LocalApp::ActiveModel = app.into();
+
+        // There should only be one field in the form
+        while let Ok(Some(field)) = multipart.next_field().await {
+            let file_name = field.file_name().map(ToString::to_string);
+            if let Ok(bytes) = field.bytes().await {
+                // Where does this app keep its icon files?
+                let location = format!("media/application-icons/{0}", id.0);
+
+                // Create the icon directory for the app if it doesn't already have one
+                std::fs::create_dir_all(location.clone()).map_err(InternalServerError)?;
+
+                // Construct the full path where we'll upload the icon file, keeping the filename intact
+                let path = std_path::new(&location).join(file_name.unwrap());
+
+                app.icon =
+                    Set(Some(path.clone().into_os_string().into_string().expect(
+                        "Could not convert the icon image path to UTF-8 string",
+                    )));
+
+                let mut file = File::create(path).map_err(InternalServerError)?;
+                file.write(&bytes).map_err(InternalServerError)?;
+            }
+        }
+
+        app.update(db).await.map_err(InternalServerError)?;
+        Ok(Response::builder()
+            .status(StatusCode::NO_CONTENT)
+            .header("HX-Trigger", format!("iconSaved_{0}", id.0))
+            .body(()))
+    } else {
+        Ok(Response::builder().status(StatusCode::NOT_FOUND).body(()))
+    }
 }
 
 /* *** TESTS *** */
