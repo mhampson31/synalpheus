@@ -242,18 +242,18 @@ fn create_app() -> impl Endpoint {
         // internal API routes
         .at(
             "/local-apps/:id",
-            get(routes::local_app_read)
-                .put(routes::local_app_update)
-                .delete(routes::local_app_delete)
+            get(routes::get_local_app)
+                .put(routes::put_local_app)
+                .delete(routes::delete_local_app)
                 .with(middleware::RequireAdmin),
         )
         .at(
             "/local-apps/:1/edit",
-            get(routes::local_app_edit).with(middleware::RequireAdmin),
+            get(routes::get_edit_local_app).with(middleware::RequireAdmin),
         )
         .at(
             "/local-apps/new",
-            get(routes::local_app_new).with(middleware::RequireAdmin),
+            get(routes::get_new_local_app).with(middleware::RequireAdmin),
         )
         .at(
             "/local-apps/icon-form/:1",
@@ -264,7 +264,7 @@ fn create_app() -> impl Endpoint {
         .at(
             "/local-apps",
             get(routes::local_apps)
-                .post(routes::local_app_create)
+                .post(routes::post_local_app)
                 .with(middleware::RequireAdmin),
         )
         .at("/app-cards", get(routes::app_cards))

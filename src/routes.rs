@@ -323,7 +323,7 @@ pub async fn local_apps() -> Result<impl IntoResponse> {
 }
 
 #[handler]
-pub async fn local_app_create(
+pub async fn post_local_app(
     Form(AppCard {
         name,
         slug,
@@ -357,7 +357,7 @@ pub async fn local_app_create(
 }
 
 #[handler]
-pub async fn local_app_edit(id: Path<u8>) -> Result<impl IntoResponse> {
+pub async fn get_edit_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
     let db = get_db();
 
     let mut context = Context::new();
@@ -379,7 +379,7 @@ pub async fn local_app_edit(id: Path<u8>) -> Result<impl IntoResponse> {
 }
 
 #[handler]
-pub async fn local_app_new() -> Result<impl IntoResponse> {
+pub async fn get_new_local_app() -> Result<impl IntoResponse> {
     let mut context = Context::new();
 
     let response = TEMPLATES
@@ -389,7 +389,7 @@ pub async fn local_app_new() -> Result<impl IntoResponse> {
 }
 
 #[handler]
-pub async fn local_app_read(id: Path<u8>) -> Result<impl IntoResponse> {
+pub async fn get_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
     let db = get_db();
 
     let mut context = Context::new();
@@ -411,7 +411,7 @@ pub async fn local_app_read(id: Path<u8>) -> Result<impl IntoResponse> {
 }
 
 #[handler]
-pub async fn local_app_update(
+pub async fn put_local_app(
     id: Path<u8>,
     Form(AppCard {
         name,
@@ -453,7 +453,7 @@ pub async fn local_app_update(
 }
 
 #[handler]
-pub async fn local_app_delete(id: Path<u8>) -> Result<impl IntoResponse> {
+pub async fn delete_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
     let db = get_db();
 
     /* delete_by_id returns a struct with a rows_affected count. If that's 0, the app wasn't deleted.
@@ -516,8 +516,12 @@ pub async fn post_icon_form(id: Path<u8>, mut multipart: Multipart) -> Result<im
                 // Create the icon directory for the app if it doesn't already have one
                 std::fs::create_dir_all(location.clone()).map_err(InternalServerError)?;
 
+                /* Leaving a few unlikely scenarios as expects here. Should map to a server error eventually,
+                 * but need better error logging first */
+
                 // Construct the full path where we'll upload the icon file, keeping the filename intact
-                let path = std_path::new(&location).join(file_name.unwrap());
+                let path =
+                    std_path::new(&location).join(file_name.expect("File upload has no filename"));
 
                 app.icon =
                     Set(Some(path.clone().into_os_string().into_string().expect(
