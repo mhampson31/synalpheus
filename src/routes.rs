@@ -73,7 +73,7 @@ async fn get_token(
             match token.refresh_token() {
                 Some(refresh_token) => {
                     println!("Refreshing token");
-                    let client = get_oauth_client();
+                    let client = get_oauth_client()?;
 
                     let new_token = client
                         .exchange_refresh_token(refresh_token)
@@ -186,7 +186,7 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
 
 #[handler]
 pub async fn login(session: &Session) -> Result<impl IntoResponse> {
-    let client = get_oauth_client();
+    let client = get_oauth_client()?;
 
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
 
@@ -234,7 +234,7 @@ pub async fn login_authorized(
         .ok_or_else(|| Error::from_string("No PKCE code", StatusCode::BAD_REQUEST))?;
     session.remove("pkce");
 
-    let client = get_oauth_client();
+    let client = get_oauth_client().unwrap();
     let config = get_config();
 
     let token = client
