@@ -234,7 +234,7 @@ pub async fn login_authorized(
         .ok_or_else(|| Error::from_string("No PKCE code", StatusCode::BAD_REQUEST))?;
     session.remove("pkce");
 
-    let client = get_oauth_client().unwrap();
+    let client = get_oauth_client()?;
     let config = get_config();
 
     let token = client

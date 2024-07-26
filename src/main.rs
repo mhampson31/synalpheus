@@ -220,10 +220,6 @@ fn create_app() -> impl Endpoint {
     Route::new()
         // static files
         .at(
-            "static/images/edit.svg",
-            StaticFileEndpoint::new("assets/images/edit.svg"),
-        )
-        .at(
             "static/css/bulma.min.css",
             StaticFileEndpoint::new("assets/css/bulma.min.css"),
         )
@@ -234,6 +230,10 @@ fn create_app() -> impl Endpoint {
         .nest(
             "media/application-icons",
             StaticFilesEndpoint::new("media/application-icons").show_files_listing(),
+        )
+        .nest(
+            "static/icons",
+            StaticFilesEndpoint::new("assets/images/icons").show_files_listing(),
         )
         // page routes
         .at("/", get(routes::index))

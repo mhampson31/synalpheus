@@ -13,9 +13,14 @@
         </section>
         <footer class="modal-card-foot">
             <div class="buttons">
-                <button class="button is-success" form="icon-form-{{app.id}}">Save changes</button>
-                <button class="button"
-                    _="on click remove .is-active from #icon-form then remove #icon-form">Cancel</button>
+                <button class="button is-success" form="icon-form-{{app.id}}">
+                    <span class="icon is-small"><img src="/static/icons/save.svg" /></span>
+                    <span>Save changes</span>
+                </button>
+                <button class="button" _="on click remove .is-active from #icon-form then remove #icon-form">
+                    <span class="icon is-small"><img src="/static/icons/save.svg" /></span>
+                    <span>Cancel</span>
+                </button>
             </div>
         </footer>
     </div>
