@@ -10,7 +10,8 @@ use poem::{
     middleware::{CatchPanic, Csrf, Tracing},
     session::{CookieConfig, RedisStorage, ServerSession, Session},
     web::Html,
-    Endpoint, EndpointExt, FromRequest, IntoResponse, Request, RequestBody, Result, Route, Server,
+    Endpoint, EndpointExt, Error, FromRequest, IntoResponse, Request, RequestBody, Result, Route,
+    Server,
 };
 
 use redis::aio::ConnectionManager;
@@ -219,10 +220,6 @@ fn create_app() -> impl Endpoint {
     Route::new()
         // static files
         .at(
-            "static/images/edit.svg",
-            StaticFileEndpoint::new("assets/images/edit.svg"),
-        )
-        .at(
             "static/css/bulma.min.css",
             StaticFileEndpoint::new("assets/css/bulma.min.css"),
         )
@@ -233,6 +230,10 @@ fn create_app() -> impl Endpoint {
         .nest(
             "media/application-icons",
             StaticFilesEndpoint::new("media/application-icons").show_files_listing(),
+        )
+        .nest(
+            "static/icons",
+            StaticFilesEndpoint::new("assets/images/icons").show_files_listing(),
         )
         // page routes
         .at("/", get(routes::index))
@@ -334,21 +335,22 @@ async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
         .with_status(StatusCode::NOT_FOUND)
 }
 
-fn get_oauth_client() -> BasicClient {
+fn get_oauth_client() -> Result<BasicClient> {
     let config = CONFIG.get_or_init(Config::new);
 
-    let redirect_url = config
-        .synalpheus_url
-        .join(config.redirect_path.as_str())
-        .expect("Couldn't construct redirect URL");
-
-    BasicClient::new(
-        ClientId::new(config.client_id.clone()),
-        Some(ClientSecret::new(config.client_secret.clone())),
-        AuthUrl::new(config.openid.authorization_endpoint.to_string()).unwrap(),
-        Some(TokenUrl::new(config.openid.token_endpoint.to_string()).unwrap()),
-    )
-    .set_redirect_uri(RedirectUrl::new(redirect_url.to_string()).unwrap())
+    match config.synalpheus_url.join(config.redirect_path.as_str()) {
+        Ok(redirect_url) => Ok(BasicClient::new(
+            ClientId::new(config.client_id.clone()),
+            Some(ClientSecret::new(config.client_secret.clone())),
+            AuthUrl::from_url(config.openid.authorization_endpoint.clone()),
+            Some(TokenUrl::from_url(config.openid.token_endpoint.clone())),
+        )
+        .set_redirect_uri(RedirectUrl::from_url(redirect_url))),
+        Err(e) => Err(Error::from_string(
+            "Cannot parse Oath2 URLs",
+            StatusCode::INTERNAL_SERVER_ERROR,
+        )),
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
