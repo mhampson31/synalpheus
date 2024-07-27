@@ -1,5 +1,4 @@
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
-use once_cell::sync::Lazy;
 
 use poem::{
     endpoint::{StaticFileEndpoint, StaticFilesEndpoint},
@@ -18,7 +17,7 @@ use redis::aio::ConnectionManager;
 use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
-use std::sync::OnceLock;
+use std::sync::{LazyLock, OnceLock};
 use tera::{Context, Tera};
 use url::Url;
 
@@ -27,7 +26,7 @@ mod middleware;
 mod routes;
 
 //pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
-pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
+pub static TEMPLATES: LazyLock<Tera> = LazyLock::new(|| {
     /* Tera::new(glob) seems to lead to a hang with 100% CPU on Docker.
      *  https://github.com/Keats/tera/issues/719
      */
