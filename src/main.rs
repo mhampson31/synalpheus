@@ -290,14 +290,14 @@ async fn main() -> Result<()> {
     CONFIG.set(Config::new()).unwrap();
     let config = get_config();
 
-    println!("Connecting to database...");
+    tracing::info!(name = "synalpheus", "Connecting to database");
     let postgres = env::var("SYN_POSTGRES_URL").expect("Missing SYN_POSTGRES_URL");
     let db = Database::connect(postgres)
         .await
         .expect("Could not connect to database");
     DATABASE.set(db).unwrap();
 
-    println!("Creating application...");
+    tracing::info!(name = "synalpheus", "Creating application");
     let app = create_app();
 
     // If $SYN_REDIS_URL is not present, assume it's in a Docker container with the hostname "redis"
@@ -345,7 +345,7 @@ fn get_oauth_client() -> Result<BasicClient> {
             Some(TokenUrl::from_url(config.openid.token_endpoint.clone())),
         )
         .set_redirect_uri(RedirectUrl::from_url(redirect_url))),
-        Err(e) => Err(Error::from_string(
+        Err(_) => Err(Error::from_string(
             "Cannot parse Oath2 URLs",
             StatusCode::INTERNAL_SERVER_ERROR,
         )),
