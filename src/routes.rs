@@ -497,8 +497,6 @@ pub async fn get_icon_form(id: Path<u8>) -> Result<impl IntoResponse> {
 pub async fn post_icon_form(id: Path<u8>, mut multipart: Multipart) -> Result<impl IntoResponse> {
     let db = get_db();
 
-    let mut context = Context::new();
-
     if let Some(app) = LocalApp::Entity::find_by_id(id.0)
         .one(db)
         .await
