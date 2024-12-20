@@ -82,8 +82,18 @@ fn get_openid(well_known: Url) -> Result<OpenID> {
     /* We'll get our OpenID endpoints from Authentik.
     To do this, we'll use a quick blocking task while we make the request to Authentik.
     This only happens on initial startup, so shouldn't be a big deal. */
+
+    // Todo: better error handling. What if it's not a success response?
+
+    /* This can get flagged as bot activity. Not sure if there's a better way to craft the request,
+    but maybe the user agent can help to craft an exception. */
     let openid = tokio::task::block_in_place(|| {
-        let openid = reqwest::blocking::get(well_known)
+        let openid = reqwest::blocking::Client::builder()
+            .user_agent("Synalpheus")
+            .build()
+            .expect("COuld not build client")
+            .get(well_known)
+            .send()
             .expect("Could not get OpenID config")
             .json::<OpenID>()
             .expect("Could not parse OpenID response");
