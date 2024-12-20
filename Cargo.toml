@@ -12,7 +12,7 @@ migration = { path = "migration" }
 dotenvy = "0.15"
 futures = { version = "0.3", features = ["executor"] }
 oauth2 = "4"
-poem = { version = "3.0", features = [
+poem = { version = "3.1", features = [
     "session",
     "csrf",
     "multipart",
@@ -20,7 +20,7 @@ poem = { version = "3.0", features = [
     "test",
     "static-files",
 ] }
-redis = { version = "0.26", features = [
+redis = { version = "0.27", features = [
     "aio",
     "tokio-comp",
     "connection-manager",
@@ -35,6 +35,6 @@ sea-orm = { version = "^0", features = [
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1", features = ["std"] }
 tera = "1.20"
-tokio = { version = "1.38", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.42", features = ["macros", "rt-multi-thread"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2.5"
