@@ -145,15 +145,17 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
                 .await
                 .map_err(InternalServerError)?;
 
-            /* Let's not include this app in the application list */
             applications.append(
-                &mut auth_apps
-                    .results
-                    .into_iter()
-                    .filter(|app| app.name.to_lowercase() != config.syn_provider.to_lowercase())
-                    .map(|a| a.into())
-                    .collect(),
-            );
+                    &mut auth_apps
+                        .results
+                        .into_iter()
+                        /* Let's not include this app in the application list */
+                        .filter(|app| app.name.to_lowercase() != config.syn_provider.to_lowercase())
+                        /* Follow Authentik's behavior of hiding apps with a launch URL of blank://blank */
+                        .filter(|app| app.launch_url.to_lowercase() != "blank://blank")
+                        .map(|a| a.into())
+                        .collect(),
+                );
 
             /* local applications */
             let db = get_db();
