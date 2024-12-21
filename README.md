@@ -43,7 +43,7 @@ Setup:
       - 8080:80
     volumes:
       # Synalpheus will use this to store images files for any non-Authentik applications
-      - /opt/appdata/synalpheus:/media
+      - /opt/appdata/synalpheus:/synalpheus/media
     environment:
       PUID: ${PUID}
       PGUID: ${PGID}

@@ -34,16 +34,16 @@ RUN cargo build --release
 FROM debian:bullseye-slim
 
 # Copy from the previous build
-COPY --from=build /synalpheus/target/release/synalpheus /usr/src/synalpheus
+COPY --from=build /synalpheus/target/release/synalpheus /synalpheus/synalpheus
 # COPY --from=build /synalpheus/target/release/synalpheus/target/x86_64-unknown-linux-musl/release/synalpheus .
 
-COPY --from=build /synalpheus/templates /usr/src/templates
-COPY --from=build /synalpheus/assets /usr/src/assets
+COPY --from=build /synalpheus/templates /synalpheus/templates
+COPY --from=build /synalpheus/assets /synalpheus/assets
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y ca-certificates libssl-dev pkg-config curl \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /usr/src
+WORKDIR /synalpheus
 # Run the binary
 CMD ["./synalpheus"]
