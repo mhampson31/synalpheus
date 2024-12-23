@@ -11,9 +11,10 @@ use poem::{
     IntoResponse, Response, Result,
 };
 use sea_orm::{
+    sea_query::Condition,
     ActiveModelTrait,
     ActiveValue::{NotSet, Set},
-    EntityTrait, QueryOrder,
+    ColumnTrait, EntityTrait, QueryFilter, QueryOrder,
 };
 use serde::Deserialize;
 use tera::Context;
@@ -122,6 +123,13 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
     if let Ok(token) = get_token(session).await {
         let client = reqwest::Client::new();
 
+        // We'll need the user's groups for determining access to our local apps
+        let groups = session
+            .get::<User>("user")
+            .expect("No user found in session")
+            .groups
+            .unwrap_or(vec![]);
+
         /* This vec will hold our apps, whether from Authentik or the DB */
         let mut applications: Vec<AppCard> = Vec::new();
 
@@ -161,6 +169,12 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
             let db = get_db();
             applications.append(
                 &mut LocalApp::Entity::find()
+                    .filter(
+                        // Same behavior as Authentik: Limit to apps in groups the user belongs to, or are not in a group
+                        Condition::any()
+                            .add(LocalApp::Column::Group.is_in(groups))
+                            .add(LocalApp::Column::Group.eq("")),
+                    )
                     .all(db)
                     .await
                     .map_err(InternalServerError)?
