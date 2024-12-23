@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.4.5] - 2024-12-x
 - Fixed local icon issues caused by Docker configuration. NOTE: the persistant local volume should now map to /synalpheus/media.
--
+- Limit local app access by group: if the local app is in a group, the user must be as well in order to see it.
+- Version bumps for frontend libraryes: Bulma, HTMX, and Hyperscript
 
 
 ## [v0.4.4] - 2024-12-20
