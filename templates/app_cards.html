@@ -1,7 +1,7 @@
-<div id="app-list" class="columns is-multiline">
+<div id="app-list" class="grid is-col-min-14">
     {% if applications %}
     {% for app in applications %}
-    <div class="column is-half-tablet is-one-third-desktop is-one-third-widescreen">
+    <div class="cell">
 
         {% if app.launch_url %}
         <a href="{{ app.launch_url }}" class="">
@@ -10,12 +10,13 @@
 
                 <header class="card-header">
 
-                    <figure class="image is-64x64">
-                        <img {% if app.icon %} src="{{app.icon}}" {% else %} src="/static/icons/shrimp.svg" {% endif %}
-                            alt="The {{app.name}} icon">
-                    </figure>
-                    <p class="card-header-title text-primary-light-invert is-4">{{ app.name }}</p>
-
+                    <media class="card-header-title">
+                        <figure class="image is-64x64">
+                            <img {% if app.icon %} src="{{app.icon}}" {% else %} src="/static/icons/shrimp.svg" {% endif
+                                %} alt="The {{app.name}} icon">
+                        </figure>
+                        <p class="text-primary-light-invert is-4">{{ app.name }}</p>
+                    </media>
                 </header>
 
                 <div class="card-content">
