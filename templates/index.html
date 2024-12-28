@@ -7,7 +7,7 @@
 
 {% block content %}
 
-<div class="container px-4">
+<div class="container">
     {% if user %}
     <div hx-get="/app-cards" hx-trigger="load,newCard from:body">
     </div>
