@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [v0.4.5] - 2024-12-x
+- Updated the app card layout so sizing should be more consistent.
 - Fixed local icon issues caused by Docker configuration. NOTE: the persistant local volume should now map to /synalpheus/media.
 - Limit local app access by group: if the local app is in a group, the user must be as well in order to see it.
 - Version bumps for frontend libraryes: Bulma, HTMX, and Hyperscript
