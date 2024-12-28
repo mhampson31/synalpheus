@@ -4,32 +4,33 @@
     <div class="cell">
 
         {% if app.launch_url %}
-        <a href="{{ app.launch_url }}" class="">
+        <a href="{{ app.launch_url }}">
             {% endif %}
             <div class="card">
 
                 <header class="card-header">
+                    <div class="card-header-title">
+                        <div class="media">
 
-                    <media class="card-header-title">
-                        <figure class="image is-64x64">
-                            <img {% if app.icon %} src="{{app.icon}}" {% else %} src="/static/icons/shrimp.svg" {% endif
-                                %} alt="The {{app.name}} icon">
-                        </figure>
-                        <p class="text-primary-light-invert is-4">{{ app.name }}</p>
-                    </media>
+                            <figure class="media-left image is-64x64">
+                                <img {% if app.icon %} src="{{app.icon}}" {% else %} src="/static/icons/shrimp.svg" {%
+                                    endif %} alt="The {{app.name}} icon">
+                            </figure>
+
+                            <div class="media-content">
+                                <p class="is-size-4">{{ app.name }}</p>
+                                {% if app.group %}
+                                <p class="is-size-6">{{ app.group }}</p>
+                                {% endif %}
+                            </div>
+
+                        </div>
+                    </div>
                 </header>
 
-                <div class="card-content">
+                <div class="card-content pt-0">
                     <p class="card-text">{{app.description}}</p>
                 </div>
-
-                <footer class="card-footer">
-                    {% if app.group %}
-                    <p class="card-footer-item is-6">{{ app.group }}</p>
-                    {% endif %}
-
-                </footer>
-
             </div>
             {% if app.launch_url %}
         </a>

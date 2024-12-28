@@ -233,6 +233,10 @@ fn create_app() -> impl Endpoint {
             StaticFileEndpoint::new("assets/css/bulma.min.css"),
         )
         .at(
+            "static/css/styles.css",
+            StaticFileEndpoint::new("assets/css/styles.css"),
+        )
+        .at(
             "favicon.svg",
             StaticFileEndpoint::new("assets/images/favicon/favicon.svg"),
         )
