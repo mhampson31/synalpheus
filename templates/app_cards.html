@@ -10,35 +10,24 @@
 
                 <header class="card-header">
 
-                    <div class="media">
-                        <div class="media-left">
-                            <figure class="image is-128x128">
-                                <img {% if app.icon %} src="{{app.icon}}" {% else %} src="/static/icons/shrimp.svg" {%
-                                    endif %} alt="The {{app.name}} icon">
-                            </figure>
-                        </div>
-
-                        <div class="media-content">
-                            <p class="card-header-title text-primary-light-invert is-4">{{ app.name }}</p>
-                        </div>
-                    </div>
+                    <figure class="image is-64x64">
+                        <img {% if app.icon %} src="{{app.icon}}" {% else %} src="/static/icons/shrimp.svg" {% endif %}
+                            alt="The {{app.name}} icon">
+                    </figure>
+                    <p class="card-header-title text-primary-light-invert is-4">{{ app.name }}</p>
 
                 </header>
 
                 <div class="card-content">
-                    <div class="content">
-                        <div class="card-section">
-                            <p class="card-text">{{app.description}}</p>
-                        </div>
-                    </div>
+                    <p class="card-text">{{app.description}}</p>
                 </div>
 
-                <div class="card-footer">
+                <footer class="card-footer">
                     {% if app.group %}
                     <p class="card-footer-item is-6">{{ app.group }}</p>
                     {% endif %}
 
-                </div>
+                </footer>
 
             </div>
             {% if app.launch_url %}
