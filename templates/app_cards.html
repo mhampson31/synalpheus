@@ -1,7 +1,7 @@
 <div id="app-list" class="columns is-multiline">
     {% if applications %}
     {% for app in applications %}
-    <div class="column is-half-tablet is-one-third-desktop is-one-quarter-widescreen">
+    <div class="column is-half-tablet is-one-third-desktop is-one-third-widescreen">
 
         {% if app.launch_url %}
         <a href="{{ app.launch_url }}" class="">
@@ -12,7 +12,7 @@
 
                     <div class="media">
                         <div class="media-left">
-                            <figure class="icon is-large">
+                            <figure class="image is-128x128">
                                 <img {% if app.icon %} src="{{app.icon}}" {% else %} src="/static/icons/shrimp.svg" {%
                                     endif %} alt="The {{app.name}} icon">
                             </figure>
