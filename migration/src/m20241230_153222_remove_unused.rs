@@ -8,21 +8,21 @@ impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         // Replace the sample below with your own migration scripts
         manager
-            .drop_table(Table::drop().table(UserGroup::Table).to_owned())
+            .drop_table(Table::drop().table(UserGroup::Table).if_exists().to_owned())
             .await?;
 
         manager
-            .drop_table(Table::drop().table(Group::Table).to_owned())
+            .drop_table(Table::drop().table(Group::Table).if_exists().to_owned())
             .await?;
 
         manager
-            .drop_table(Table::drop().table(User::Table).to_owned())
+            .drop_table(Table::drop().table(User::Table).if_exists().to_owned())
             .await?;
 
         Ok(())
     }
 
-    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+    async fn down(&self, _manager: &SchemaManager) -> Result<(), DbErr> {
         Ok(())
     }
 }

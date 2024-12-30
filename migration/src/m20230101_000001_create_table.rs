@@ -95,6 +95,18 @@ impl MigrationTrait for Migration {
             .drop_table(Table::drop().table(Application::Table).to_owned())
             .await?;
 
+        manager
+            .drop_table(Table::drop().table(UserGroup::Table).if_exists().to_owned())
+            .await?;
+
+        manager
+            .drop_table(Table::drop().table(Group::Table).if_exists().to_owned())
+            .await?;
+
+        manager
+            .drop_table(Table::drop().table(User::Table).if_exists().to_owned())
+            .await?;
+
         Ok(())
     }
 }
