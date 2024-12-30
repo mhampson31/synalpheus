@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated SeaORM version in migrations and entities
 - Refactored migration for SeaORM's new format
 - Removed some tables from the initial migration that we ended up not needing
-
+- Run pending migrations on app boot
 
 ## [v0.4.5] - 2024-12-28
 - Updated the app card layout so sizing should be more consistent.
