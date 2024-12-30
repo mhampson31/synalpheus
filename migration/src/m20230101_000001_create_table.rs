@@ -6,7 +6,6 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        println!("Create table Group");
         manager
             .create_table(
                 Table::create()
@@ -21,7 +20,6 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
-        println!("Create table Application");
         manager
             .create_table(
                 Table::create()
@@ -38,7 +36,6 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
-        println!("Create table User");
         manager
             .create_table(
                 Table::create()
@@ -53,7 +50,6 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
-        println!("Create table UserGroup");
         manager
             .create_table(
                 Table::create()
@@ -90,7 +86,6 @@ impl MigrationTrait for Migration {
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        println!("Drop table Application");
         manager
             .drop_table(Table::drop().table(Application::Table).to_owned())
             .await?;

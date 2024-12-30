@@ -21,6 +21,8 @@ use std::sync::{LazyLock, OnceLock};
 use tera::{Context, Tera};
 use url::Url;
 
+use migration::{Migrator, MigratorTrait};
+
 mod data;
 mod middleware;
 mod routes;
@@ -309,6 +311,10 @@ async fn main() -> Result<()> {
     let db = Database::connect(postgres)
         .await
         .expect("Could not connect to database");
+
+    println!("Performing migrations...");
+    Migrator::up(&db, None).await.map_err(InternalServerError)?;
+
     DATABASE.set(db).unwrap();
 
     println!("Creating application...");
