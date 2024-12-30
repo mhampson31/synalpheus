@@ -3,14 +3,19 @@
 What's new in Synalpheus?
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). (Or tries to anyway.)
+
+## [v0.5.0] - ?
+- Updated SeaORM version in migrations and entities
+- Refactored migration for SeaORM's new format
+- Removed some tables from the initial migration that we ended up not needing
+- Run pending migrations on app boot
 
 ## [v0.4.5] - 2024-12-28
 - Updated the app card layout so sizing should be more consistent.
-- Fixed local icon issues caused by Docker configuration. NOTE: the persistant local volume should now map to /synalpheus/media.
-- Limit local app access by group: if the local app is in a group, the user must be as well in order to see it.
+- Fixed local icon issues caused by Docker configuration. NOTE: the persistant local volume should now map to /synalpheus/media
+- Limit local app access by group: if the local app is in a group, the user must be as well in order to see it
 - Version bumps for frontend libraryes: Bulma, HTMX, and Hyperscript
-
 
 ## [v0.4.4] - 2024-12-20
 - Code refactoring and cleanup
