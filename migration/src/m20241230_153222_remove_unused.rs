@@ -21,10 +21,10 @@ impl MigrationTrait for Migration {
 
         Ok(())
     }
-}
 
-async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-    Ok(())
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        Ok(())
+    }
 }
 
 /// Learn more at https://docs.rs/sea-query#iden
