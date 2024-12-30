@@ -477,11 +477,11 @@ impl From<AuthentikApp> for AppCard {
 impl From<entity::application::Model> for AppCard {
     fn from(app: entity::application::Model) -> Self {
         AppCard {
-            icon: app.icon.unwrap_or_default(),
+            icon: app.icon,
             name: app.name,
             slug: app.slug,
-            group: app.group.unwrap_or_default(),
-            description: app.description.unwrap_or_default(),
+            group: app.group,
+            description: app.description,
             launch_url: app.launch_url,
             source: Source::Local,
         }

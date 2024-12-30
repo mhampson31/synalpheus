@@ -355,9 +355,9 @@ pub async fn post_local_app(
         name: Set(name),
         slug: Set(slug),
         launch_url: Set(launch_url),
-        icon: Set(Some(icon)),
-        description: Set(Some(description)),
-        group: Set(Some(group)),
+        icon: Set(icon),
+        description: Set(description),
+        group: Set(group),
         id: NotSet,
     };
     let db = get_db();
@@ -452,9 +452,9 @@ pub async fn put_local_app(
         app.name = Set(name);
         app.slug = Set(slug);
         app.launch_url = Set(launch_url);
-        app.icon = Set(Some(icon));
-        app.description = Set(Some(description));
-        app.group = Set(Some(group));
+        app.icon = Set(icon);
+        app.description = Set(description);
+        app.group = Set(group);
 
         let app: LocalApp::Model = app.update(db).await.map_err(InternalServerError)?;
 
@@ -537,10 +537,11 @@ pub async fn post_icon_form(id: Path<u8>, mut multipart: Multipart) -> Result<im
                 let path =
                     std_path::new(&location).join(file_name.expect("File upload has no filename"));
 
-                app.icon =
-                    Set(Some(path.clone().into_os_string().into_string().expect(
-                        "Could not convert the icon image path to UTF-8 string",
-                    )));
+                app.icon = Set(path
+                    .clone()
+                    .into_os_string()
+                    .into_string()
+                    .expect("Could not convert the icon image path to UTF-8 string"));
 
                 let mut file = File::create(path).map_err(InternalServerError)?;
                 file.write(&bytes).map_err(InternalServerError)?;
