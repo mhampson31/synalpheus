@@ -19,6 +19,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
 use std::sync::{LazyLock, OnceLock};
 use tera::{Context, Tera};
+use tracing::{event, instrument, Level};
 use url::Url;
 
 use migration::{Migrator, MigratorTrait};
@@ -294,19 +295,21 @@ fn create_app() -> impl Endpoint {
 }
 
 #[tokio::main]
+#[instrument]
 async fn main() -> Result<()> {
     dotenvy::dotenv().ok();
 
     if env::var_os("RUST_LOG").is_none() {
-        env::set_var("RUST_LOG", "poem=debug");
+        env::set_var("RUST_LOG", "error,poem=debug,synalpheus=trace");
     }
-
     tracing_subscriber::fmt::init();
+
+    event!(Level::TRACE, "starting Synalpheus server");
 
     CONFIG.set(Config::new()).unwrap();
     let config = get_config();
 
-    println!("Connecting to database...");
+    event!(Level::INFO, "Connecting to database");
     let postgres = env::var("SYN_POSTGRES_URL").expect("Missing SYN_POSTGRES_URL");
     let db = Database::connect(postgres)
         .await
