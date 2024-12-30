@@ -1,4 +1,4 @@
-use sea_orm_migration::prelude::*;
+use sea_orm_migration::{prelude::*, schema::*};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -12,25 +12,11 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Group::Table)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(Group::Id)
-                            .integer()
-                            .not_null()
-                            .auto_increment()
-                            .primary_key(),
-                    )
-                    .col(ColumnDef::new(Group::Pk).string().unique_key().not_null())
-                    .col(ColumnDef::new(Group::Name).string().not_null())
-                    .col(
-                        ColumnDef::new(Group::IsSuperuser)
-                            .boolean()
-                            .default(Value::Bool(Some(false))),
-                    )
-                    .col(
-                        ColumnDef::new(Group::Parent)
-                            .string()
-                            .default(Value::String(None)),
-                    )
+                    .col(pk_auto(Group::Id))
+                    .col(string(Group::Pk).unique_key())
+                    .col(string(Group::Name))
+                    .col(boolean(Group::IsSuperuser).default(Value::Bool(Some(false))))
+                    .col(string(Group::Parent).default(Value::String(None)))
                     .to_owned(),
             )
             .await?;
@@ -41,32 +27,13 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Application::Table)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(Application::Id)
-                            .integer()
-                            .not_null()
-                            .auto_increment()
-                            .primary_key(),
-                    )
-                    .col(ColumnDef::new(Application::Name).string().not_null())
-                    .col(ColumnDef::new(Application::Slug).string().not_null())
-                    .col(ColumnDef::new(Application::LaunchUrl).string().not_null())
-                    .col(
-                        ColumnDef::new(Application::Icon)
-                            .string()
-                            .default(Some("".to_string())),
-                    )
-                    .col(
-                        ColumnDef::new(Application::Group)
-                            .string()
-                            .default(Some("".to_string())),
-                    )
-                    .to_owned()
-                    .col(
-                        ColumnDef::new(Application::Description)
-                            .string()
-                            .default(Some("".to_string())),
-                    )
+                    .col(pk_auto(Application::Id))
+                    .col(string(Application::Name))
+                    .col(string(Application::Slug))
+                    .col(string(Application::LaunchUrl))
+                    .col(string(Application::Icon).default(Some("".to_string())))
+                    .col(string(Application::Group).default(Some("".to_string())))
+                    .col(string(Application::Description).default(Some("".to_string())))
                     .to_owned(),
             )
             .await?;
@@ -77,21 +44,11 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(User::Table)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(User::Id)
-                            .integer()
-                            .not_null()
-                            .auto_increment()
-                            .primary_key(),
-                    )
-                    .col(ColumnDef::new(User::Pk).string().unique_key().not_null())
-                    .col(ColumnDef::new(User::Username).string().not_null())
-                    .col(
-                        ColumnDef::new(User::IsSuperuser)
-                            .boolean()
-                            .default(Value::Bool(Some(false))),
-                    )
-                    .col(ColumnDef::new(User::Email).string().not_null())
+                    .col(pk_auto(User::Id))
+                    .col(string(User::Pk).unique_key())
+                    .col(string(User::Username))
+                    .col(boolean(User::IsSuperuser).default(Value::Bool(Some(false))))
+                    .col(string(User::Email))
                     .to_owned(),
             )
             .await?;
@@ -102,8 +59,8 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(UserGroup::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(UserGroup::UserPk).string())
-                    .col(ColumnDef::new(UserGroup::GroupPk).string())
+                    .col(string(UserGroup::UserPk))
+                    .col(string(UserGroup::GroupPk))
                     .primary_key(
                         Index::create()
                             .col(UserGroup::UserPk)
@@ -133,24 +90,9 @@ impl MigrationTrait for Migration {
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        println!("Drop table UserGroup");
-        manager
-            .drop_table(Table::drop().table(UserGroup::Table).to_owned())
-            .await?;
-
-        println!("Drop table Group");
-        manager
-            .drop_table(Table::drop().table(Group::Table).to_owned())
-            .await?;
-
         println!("Drop table Application");
         manager
             .drop_table(Table::drop().table(Application::Table).to_owned())
-            .await?;
-
-        println!("Drop table User");
-        manager
-            .drop_table(Table::drop().table(User::Table).to_owned())
             .await?;
 
         Ok(())
