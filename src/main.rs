@@ -304,7 +304,7 @@ async fn main() -> Result<()> {
     }
     tracing_subscriber::fmt::init();
 
-    event!(Level::TRACE, "starting Synalpheus server");
+    event!(Level::INFO, "Starting Synalpheus server");
 
     CONFIG.set(Config::new()).unwrap();
     let config = get_config();
@@ -315,12 +315,12 @@ async fn main() -> Result<()> {
         .await
         .expect("Could not connect to database");
 
-    println!("Performing migrations...");
+    event!(Level::INFO, "Checking for pending migrations");
     Migrator::up(&db, None).await.map_err(InternalServerError)?;
 
     DATABASE.set(db).unwrap();
 
-    println!("Creating application...");
+    event!(Level::INFO, "Creating application");
     let app = create_app();
 
     // If $SYN_REDIS_URL is not present, assume it's in a Docker container with the hostname "redis"
