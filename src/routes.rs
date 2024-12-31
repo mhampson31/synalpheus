@@ -57,7 +57,7 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
     }
 }
 
-#[instrument(skip(session))]
+#[instrument(skip_all)]
 async fn get_token(
     session: &Session,
 ) -> Result<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>> {
@@ -117,7 +117,7 @@ async fn get_token(
 }
 
 #[handler]
-#[instrument]
+#[instrument(skip_all)]
 pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
     /* Send the user back to login if we can't get the access token. Is 303 the right code? */
 
@@ -204,6 +204,7 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
 }
 
 #[handler]
+#[instrument(skip(session))]
 pub async fn login(session: &Session) -> Result<impl IntoResponse> {
     let client = get_oauth_client()?;
 
@@ -223,6 +224,7 @@ pub async fn login(session: &Session) -> Result<impl IntoResponse> {
     session.set("pkce", pkce_verifier);
 
     // Redirect to Authentik
+    event!(Level::INFO, "login initiated");
     Ok(Redirect::see_other(auth_url))
 }
 
