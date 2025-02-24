@@ -299,9 +299,11 @@ fn create_app() -> impl Endpoint {
 async fn main() -> Result<()> {
     dotenvy::dotenv().ok();
 
-    if env::var_os("RUST_LOG").is_none() {
-        env::set_var("RUST_LOG", "error,poem=debug,synalpheus=trace");
-    }
+    /* Note: RUST_LOG is set to "error,poem=debug,synalpheus=trace" in the Dockerfile.
+     * If you don't plan to use this project's Docker image, you'll want to ensure that's set
+     * appropriately for your desired log levels.
+     */
+
     tracing_subscriber::fmt::init();
 
     event!(Level::INFO, "Starting Synalpheus server");
