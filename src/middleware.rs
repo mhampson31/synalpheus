@@ -1,6 +1,6 @@
 use poem::{
-    http::StatusCode, session::Session, Endpoint, IntoResponse, Middleware, Request, Response,
-    Result,
+    Endpoint, IntoResponse, Middleware, Request, Response, Result, http::StatusCode,
+    session::Session,
 };
 
 use super::User;
@@ -47,10 +47,9 @@ impl<E: Endpoint> Endpoint for RequireAdminImpl<E> {
 mod tests {
     use super::*;
     use poem::{
-        get, handler,
+        EndpointExt, Route, get, handler,
         session::{CookieConfig, CookieSession},
         test::TestClient,
-        EndpointExt, Route,
     };
 
     #[handler]
