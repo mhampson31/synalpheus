@@ -20,7 +20,7 @@ poem = { version = "3.1", features = [
     "test",
     "static-files",
 ] }
-redis = { version = "0.27", features = [
+redis = { version = "0.28", features = [
     "aio",
     "tokio-comp",
     "connection-manager",
