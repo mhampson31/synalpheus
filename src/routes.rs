@@ -18,6 +18,7 @@ use sea_orm::{
 };
 use serde::Deserialize;
 use tera::Context;
+use tracing::{event, instrument, Level};
 
 use std::{
     fs::File,
@@ -56,6 +57,7 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse> {
     }
 }
 
+#[instrument(skip_all)]
 async fn get_token(
     session: &Session,
 ) -> Result<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>> {
@@ -73,7 +75,7 @@ async fn get_token(
         if SystemTime::now() > expiry {
             match token.refresh_token() {
                 Some(refresh_token) => {
-                    println!("Refreshing token");
+                    event!(Level::TRACE, "Refreshing token");
                     let client = get_oauth_client()?;
 
                     let new_token = client
@@ -88,7 +90,7 @@ async fn get_token(
                             .unwrap_or_else(|| Duration::new(3600, 0));
 
                     /* We have a new token, so update the session */
-                    println!("New expiry: {:#?}", &new_expiry);
+                    event!(Level::TRACE, "New expiry: {:#?}", &new_expiry);
                     session.set("expiry", new_expiry);
 
                     token = new_token;
@@ -115,6 +117,7 @@ async fn get_token(
 }
 
 #[handler]
+#[instrument(skip_all)]
 pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
     /* Send the user back to login if we can't get the access token. Is 303 the right code? */
 
@@ -187,7 +190,7 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
 
             context.insert("applications", &applications);
         } else {
-            println!("{:#?}", response.text().await.unwrap());
+            event!(Level::DEBUG, "{}", response.text().await.unwrap());
         }
 
         let response = TEMPLATES
@@ -201,6 +204,7 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
 }
 
 #[handler]
+#[instrument(skip(session))]
 pub async fn login(session: &Session) -> Result<impl IntoResponse> {
     let client = get_oauth_client()?;
 
@@ -220,6 +224,7 @@ pub async fn login(session: &Session) -> Result<impl IntoResponse> {
     session.set("pkce", pkce_verifier);
 
     // Redirect to Authentik
+    event!(Level::INFO, "login initiated");
     Ok(Redirect::see_other(auth_url))
 }
 

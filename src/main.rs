@@ -19,6 +19,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
 use std::sync::{LazyLock, OnceLock};
 use tera::{Context, Tera};
+use tracing::{event, instrument, Level};
 use url::Url;
 
 use migration::{Migrator, MigratorTrait};
@@ -294,30 +295,32 @@ fn create_app() -> impl Endpoint {
 }
 
 #[tokio::main]
+#[instrument]
 async fn main() -> Result<()> {
     dotenvy::dotenv().ok();
 
     if env::var_os("RUST_LOG").is_none() {
-        env::set_var("RUST_LOG", "poem=debug");
+        env::set_var("RUST_LOG", "error,poem=debug,synalpheus=trace");
     }
-
     tracing_subscriber::fmt::init();
+
+    event!(Level::INFO, "Starting Synalpheus server");
 
     CONFIG.set(Config::new()).unwrap();
     let config = get_config();
 
-    println!("Connecting to database...");
+    event!(Level::INFO, "Connecting to database");
     let postgres = env::var("SYN_POSTGRES_URL").expect("Missing SYN_POSTGRES_URL");
     let db = Database::connect(postgres)
         .await
         .expect("Could not connect to database");
 
-    println!("Performing migrations...");
+    event!(Level::INFO, "Checking for pending migrations");
     Migrator::up(&db, None).await.map_err(InternalServerError)?;
 
     DATABASE.set(db).unwrap();
 
-    println!("Creating application...");
+    event!(Level::INFO, "Creating application");
     let app = create_app();
 
     // If $SYN_REDIS_URL is not present, assume it's in a Docker container with the hostname "redis"
