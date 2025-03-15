@@ -7,7 +7,7 @@ Authentik does have a perfectly good dashboard built in. So why Synalpheus? Two 
 
 Synalpheus is not likely to work out of the box with other auth providers -- it expects to be able to make requests against an Authentik API, and deserialize the response according to its schema.
 
-What works as of v0.4.5?
+What works as of v0.5.0?
 * Login/logout via Authentik
 * Retrieving user data, including applications the user can access, from Authentik
 * Storing info about applications you're not managing via Authentik in your Postgres database
@@ -17,7 +17,7 @@ What works as of v0.4.5?
 * Docker integration
 
 Still todo:
-* Better handling and logging of errors
+* File logging and rotation
 * Cleanup and refactoring of the code
 
 Setup:
