@@ -38,7 +38,7 @@ pub struct AuthRequest {
 }
 
 #[handler]
-pub async fn index(session: &Session) -> Result<impl IntoResponse> {
+pub async fn index(session: &Session) -> Result<impl IntoResponse + use<>> {
     let mut context = Context::new();
     if let Some(user) = session.get::<User>("user") {
         context.insert("user", &user);
@@ -118,7 +118,7 @@ async fn get_token(
 
 #[handler]
 #[instrument(skip_all)]
-pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
+pub async fn app_cards(session: &Session) -> Result<impl IntoResponse + use<>> {
     /* Send the user back to login if we can't get the access token. Is 303 the right code? */
 
     let mut context = Context::new();
@@ -205,7 +205,7 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse> {
 
 #[handler]
 #[instrument(skip(session))]
-pub async fn login(session: &Session) -> Result<impl IntoResponse> {
+pub async fn login(session: &Session) -> Result<impl IntoResponse + use<>> {
     let client = get_oauth_client()?;
 
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
@@ -305,7 +305,7 @@ pub async fn logout(session: &Session) -> Redirect {
 }
 
 #[handler]
-pub async fn admin(session: &Session) -> Result<impl IntoResponse> {
+pub async fn admin(session: &Session) -> Result<impl IntoResponse + use<>> {
     match session.get::<User>("user") {
         Some(user) => {
             let mut context = Context::new();

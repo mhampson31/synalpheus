@@ -1,5 +1,5 @@
 # Rust as the base image
-FROM rust:1.83-slim-bullseye AS build
+FROM rust:1.85-slim-bullseye AS build
 
 # Create a new empty shell project
 RUN USER=root cargo new --bin synalpheus
@@ -39,6 +39,8 @@ COPY --from=build /synalpheus/target/release/synalpheus /synalpheus/synalpheus
 
 COPY --from=build /synalpheus/templates /synalpheus/templates
 COPY --from=build /synalpheus/assets /synalpheus/assets
+
+ENV RUST_LOG=error,poem=debug,synalpheus=trace
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y ca-certificates libssl-dev pkg-config curl \
