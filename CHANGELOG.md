@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). (Or tries to anyway.)
 
 ## [v0.5.0] - ?
+- Rust edition bump to 2024
+- Improved logging
 - Updated SeaORM version in migrations and entities
 - Refactored migration for SeaORM's new format
 - Removed some tables from the initial migration that we ended up not needing
