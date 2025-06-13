@@ -1,6 +1,8 @@
-use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
+use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl, basic::BasicClient};
 
 use poem::{
+    Endpoint, EndpointExt, Error, FromRequest, IntoResponse, Request, RequestBody, Result, Route,
+    Server,
     endpoint::{StaticFileEndpoint, StaticFilesEndpoint},
     error::{InternalServerError, NotFoundError},
     get,
@@ -9,8 +11,6 @@ use poem::{
     middleware::{CatchPanic, Csrf, Tracing},
     session::{CookieConfig, RedisStorage, ServerSession, Session},
     web::Html,
-    Endpoint, EndpointExt, Error, FromRequest, IntoResponse, Request, RequestBody, Result, Route,
-    Server,
 };
 
 use redis::aio::ConnectionManager;
@@ -19,7 +19,8 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
 use std::sync::{LazyLock, OnceLock};
 use tera::{Context, Tera};
-use tracing::{event, instrument, Level};
+use tracing::{Level, event, instrument};
+use tracing_subscriber::{filter::EnvFilter, fmt};
 use url::Url;
 
 use migration::{Migrator, MigratorTrait};
@@ -299,10 +300,12 @@ fn create_app() -> impl Endpoint {
 async fn main() -> Result<()> {
     dotenvy::dotenv().ok();
 
-    if env::var_os("RUST_LOG").is_none() {
-        env::set_var("RUST_LOG", "error,poem=debug,synalpheus=trace");
-    }
-    tracing_subscriber::fmt::init();
+    /*if env::var_os("RUST_LOG").is_none() {
+                env::set_var("RUST_LOG", "error,poem=debug,synalpheus=trace");
+    }*/
+    tracing_subscriber::fmt()
+        //.with_env_filter(EnvFilter::from_default_env())
+        .init();
 
     event!(Level::INFO, "Starting Synalpheus server");
 
