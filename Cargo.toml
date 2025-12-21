@@ -1,5 +1,6 @@
 [package]
 name = "synalpheus"
+
 version = "0.5.1"
 edition = "2024"
 

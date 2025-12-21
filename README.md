@@ -17,7 +17,7 @@ What works as of v0.5.1?
 * Docker integration
 
 Still todo:
-* Better handling and logging of errors
+* File logging and rotation
 * Cleanup and refactoring of the code
 
 Setup:
