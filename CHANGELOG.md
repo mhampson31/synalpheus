@@ -5,12 +5,10 @@ What's new in Synalpheus?
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). (Or tries to anyway.)
 
-## [v0.5.1] - 2025-09-03
+## [v0.5.1] - 2025-12-21
 - Version bumps, it's been a while
 
-
-
-## [v0.5.0] - ?
+## [v0.5.0] - 2025-03-15
 - Updated SeaORM version in migrations and entities
 - Refactored migration for SeaORM's new format
 - Removed some tables from the initial migration that we ended up not needing
