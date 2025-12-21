@@ -1,5 +1,5 @@
 # synalpheus
-Synalpheus is a dashboard that uses Authentik's APIs to automatically displaying the logged-in user's list of applications. As of 0.4.3, Synalpheus is mostly feature-complete.
+Synalpheus is a dashboard that uses Authentik's APIs to automatically displaying the logged-in user's list of applications. As of now, Synalpheus is mostly feature-complete.
 
 ![A screenshot of Synalpheus](/screenshot.png?raw=true "Synalpheus")
 
@@ -7,7 +7,7 @@ Authentik does have a perfectly good dashboard built in. So why Synalpheus? Two 
 
 Synalpheus is not likely to work out of the box with other auth providers -- it expects to be able to make requests against an Authentik API, and deserialize the response according to its schema.
 
-What works as of v0.5.0?
+What works as of v0.5.1?
 * Login/logout via Authentik
 * Retrieving user data, including applications the user can access, from Authentik
 * Storing info about applications you're not managing via Authentik in your Postgres database

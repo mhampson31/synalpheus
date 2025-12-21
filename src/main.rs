@@ -1,4 +1,7 @@
-use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl, basic::BasicClient};
+use oauth2::{
+    AuthUrl, ClientId, ClientSecret, EndpointNotSet, EndpointSet, RedirectUrl, TokenUrl,
+    basic::BasicClient,
+};
 
 use poem::{
     Endpoint, EndpointExt, Error, FromRequest, IntoResponse, Request, RequestBody, Result, Route,
@@ -20,6 +23,7 @@ use std::env;
 use std::sync::{LazyLock, OnceLock};
 use tera::{Context, Tera};
 use tracing::{Level, event, instrument};
+use tracing_subscriber;
 use url::Url;
 
 use migration::{Migrator, MigratorTrait};
@@ -94,7 +98,7 @@ fn get_openid(well_known: Url) -> Result<OpenID> {
         let openid = reqwest::blocking::Client::builder()
             .user_agent("Synalpheus")
             .build()
-            .expect("COuld not build client")
+            .expect("Could not build client")
             .get(well_known)
             .send()
             .expect("Could not get OpenID config")
@@ -299,12 +303,7 @@ fn create_app() -> impl Endpoint {
 async fn main() -> Result<()> {
     dotenvy::dotenv().ok();
 
-    /* Note: RUST_LOG is set to "error,poem=debug,synalpheus=trace" in the Dockerfile.
-     * If you don't plan to use this project's Docker image, you'll want to ensure that's set
-     * appropriately for your desired log levels.
-     */
-
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt().init();
 
     event!(Level::INFO, "Starting Synalpheus server");
 
@@ -359,18 +358,19 @@ async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
         .with_status(StatusCode::NOT_FOUND)
 }
 
-fn get_oauth_client() -> Result<BasicClient> {
+fn get_oauth_client()
+-> Result<BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet>> {
     let config = CONFIG.get_or_init(Config::new);
 
     match config.synalpheus_url.join(config.redirect_path.as_str()) {
-        Ok(redirect_url) => Ok(BasicClient::new(
-            ClientId::new(config.client_id.clone()),
-            Some(ClientSecret::new(config.client_secret.clone())),
-            AuthUrl::from_url(config.openid.authorization_endpoint.clone()),
-            Some(TokenUrl::from_url(config.openid.token_endpoint.clone())),
-        )
-        .set_redirect_uri(RedirectUrl::from_url(redirect_url))),
-        Err(e) => Err(Error::from_string(
+        Ok(redirect_url) => Ok(BasicClient::new(ClientId::new(config.client_id.clone()))
+            .set_client_secret(ClientSecret::new(config.client_secret.clone()))
+            .set_auth_uri(AuthUrl::from_url(
+                config.openid.authorization_endpoint.clone(),
+            ))
+            .set_token_uri(TokenUrl::from_url(config.openid.token_endpoint.clone()))
+            .set_redirect_uri(RedirectUrl::from_url(redirect_url))),
+        Err(_) => Err(Error::from_string(
             "Cannot parse Oath2 URLs",
             StatusCode::INTERNAL_SERVER_ERROR,
         )),
