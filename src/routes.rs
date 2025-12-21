@@ -1,24 +1,24 @@
 use oauth2::{
-    basic::BasicTokenType, reqwest::async_http_client, AuthorizationCode, CsrfToken,
-    EmptyExtraTokenFields, PkceCodeChallenge, Scope, StandardTokenResponse, TokenResponse,
+    AuthorizationCode, CsrfToken, EmptyExtraTokenFields, PkceCodeChallenge, Scope,
+    StandardTokenResponse, TokenResponse, basic::BasicTokenType, reqwest::Client as ReqwestClient,
 };
 use poem::{
+    IntoResponse, Response, Result,
     error::{BadRequest, Error, InternalServerError},
     handler,
     http::StatusCode,
     session::Session,
     web::{Form, Html, Multipart, Path, Query, Redirect},
-    IntoResponse, Response, Result,
 };
 use sea_orm::{
-    sea_query::Condition,
     ActiveModelTrait,
     ActiveValue::{NotSet, Set},
     ColumnTrait, EntityTrait, QueryFilter, QueryOrder,
+    sea_query::Condition,
 };
 use serde::Deserialize;
 use tera::Context;
-use tracing::{event, instrument, Level};
+use tracing::{Level, event, instrument};
 
 use std::{
     fs::File,
@@ -27,7 +27,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use super::{get_config, get_db, get_oauth_client, AppCard, AppResponse, User, TEMPLATES};
+use super::{AppCard, AppResponse, TEMPLATES, User, get_config, get_db, get_oauth_client};
 
 use entity::application as LocalApp;
 
@@ -80,7 +80,7 @@ async fn get_token(
 
                     let new_token = client
                         .exchange_refresh_token(refresh_token)
-                        .request_async(async_http_client)
+                        .request_async(&ReqwestClient::new())
                         .await
                         .map_err(InternalServerError)?;
 
@@ -261,7 +261,7 @@ pub async fn login_authorized(
     let token = client
         .exchange_code(AuthorizationCode::new(code))
         .set_pkce_verifier(pkce_verifier)
-        .request_async(async_http_client)
+        .request_async(&ReqwestClient::new())
         .await
         .map_err(InternalServerError)?;
 
