@@ -140,6 +140,9 @@ pub struct Config {
     // The port we're running on
     port: u16,
 
+    // The title to show in the browser tab
+    title: String,
+
     // The name of the provider created for Synalpheus in Authentik
     syn_provider: String,
 
@@ -167,6 +170,8 @@ impl Config {
             Ok(p) => p.parse().expect("SYN_PORT is not a valid port number"),
             Err(_) => 80,
         };
+
+        let title: String = dotenvy::var("SYN_TITLE").unwrap_or_else(|_| "Synalpheus".to_string());
 
         /* Set up what we need to talk to Authentik */
         let authentik_url = dotenvy::var("SYN_AUTHENTIK_URL").expect("Missing SYN_AUTHENTIK_URL");
@@ -206,6 +211,8 @@ impl Config {
             synalpheus_url: synalpheus_url.clone(),
 
             port,
+
+            title,
         }
     }
 }
@@ -375,6 +382,13 @@ fn get_oauth_client()
             StatusCode::INTERNAL_SERVER_ERROR,
         )),
     }
+}
+
+fn get_context() -> Context {
+    let mut context = Context::new();
+    let config = CONFIG.get().unwrap();
+    context.insert("title", &config.title);
+    context
 }
 
 #[derive(Debug, Serialize, Deserialize)]
