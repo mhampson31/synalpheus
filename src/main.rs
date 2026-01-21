@@ -438,7 +438,7 @@ pub struct AuthentikApp {
     meta_launch_url: String,
     #[serde(
         deserialize_with = "deserde_icon_url",
-        rename(deserialize = "meta_icon")
+        rename(deserialize = "meta_icon_url")
     )]
     icon: String,
     #[serde(rename(deserialize = "meta_description"))]
@@ -510,7 +510,7 @@ where
     Ok(key.unwrap_or_default())
 }
 
-/* Not only is the meta_icon field nullable, but it's also a relative path on Authentik's domain.
+/* Not only is the meta_icon_url field nullable, but it's also a relative path on Authentik's domain.
  * Here we handle null values and also convert it to an absolute path so we can use them.
  * Fortunately we know this field is always going to be a string */
 fn deserde_icon_url<'de, D>(de: D) -> Result<String, D::Error>
