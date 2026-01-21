@@ -17,7 +17,6 @@ use sea_orm::{
     sea_query::Condition,
 };
 use serde::Deserialize;
-use tera::Context;
 use tracing::{Level, event, instrument};
 
 use std::{
@@ -27,7 +26,9 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use super::{AppCard, AppResponse, TEMPLATES, User, get_config, get_db, get_oauth_client};
+use super::{
+    AppCard, AppResponse, TEMPLATES, User, get_config, get_context, get_db, get_oauth_client,
+};
 
 use entity::application as LocalApp;
 
@@ -39,7 +40,7 @@ pub struct AuthRequest {
 
 #[handler]
 pub async fn index(session: &Session) -> Result<impl IntoResponse + use<>> {
-    let mut context = Context::new();
+    let mut context = get_context();
     if let Some(user) = session.get::<User>("user") {
         context.insert("user", &user);
 
@@ -121,7 +122,7 @@ async fn get_token(
 pub async fn app_cards(session: &Session) -> Result<impl IntoResponse + use<>> {
     /* Send the user back to login if we can't get the access token. Is 303 the right code? */
 
-    let mut context = Context::new();
+    let mut context = get_context();
 
     if let Ok(token) = get_token(session).await {
         let client = reqwest::Client::new();
@@ -308,7 +309,7 @@ pub async fn logout(session: &Session) -> Redirect {
 pub async fn admin(session: &Session) -> Result<impl IntoResponse + use<>> {
     match session.get::<User>("user") {
         Some(user) => {
-            let mut context = Context::new();
+            let mut context = get_context();
             context.insert("user", &user);
 
             let response = TEMPLATES
@@ -327,7 +328,7 @@ pub async fn admin(session: &Session) -> Result<impl IntoResponse + use<>> {
 pub async fn local_apps() -> Result<impl IntoResponse> {
     let db = get_db();
 
-    let mut context = Context::new();
+    let mut context = get_context();
 
     let apps: Vec<entity::application::Model> = LocalApp::Entity::find()
         .order_by_asc(LocalApp::Column::Id)
@@ -381,7 +382,7 @@ pub async fn post_local_app(
 pub async fn get_edit_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
     let db = get_db();
 
-    let mut context = Context::new();
+    let mut context = get_context();
 
     if let Some(app) = LocalApp::Entity::find_by_id(id.0)
         .one(db)
@@ -401,7 +402,7 @@ pub async fn get_edit_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
 
 #[handler]
 pub async fn get_new_local_app() -> Result<impl IntoResponse> {
-    let mut context = Context::new();
+    let mut context = get_context();
 
     let response = TEMPLATES
         .render("local_app_create.html", &context)
@@ -413,7 +414,7 @@ pub async fn get_new_local_app() -> Result<impl IntoResponse> {
 pub async fn get_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
     let db = get_db();
 
-    let mut context = Context::new();
+    let mut context = get_context();
 
     if let Some(app) = LocalApp::Entity::find_by_id(id.0)
         .one(db)
@@ -446,7 +447,7 @@ pub async fn put_local_app(
 ) -> Result<impl IntoResponse> {
     let db = get_db();
 
-    let mut context = Context::new();
+    let mut context = get_context();
 
     if let Some(app) = LocalApp::Entity::find_by_id(id.0)
         .one(db)
@@ -496,7 +497,7 @@ pub async fn delete_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
 pub async fn get_icon_form(id: Path<u8>) -> Result<impl IntoResponse> {
     let db = get_db();
 
-    let mut context = Context::new();
+    let mut context = get_context();
 
     if let Some(app) = LocalApp::Entity::find_by_id(id.0)
         .one(db)
