@@ -1,244 +1,244 @@
 {
-    "pagination": {
-        "next": 0,
-        "previous": 0,
-        "count": 9,
-        "current": 1,
-        "total_pages": 1,
-        "start_index": 1,
-        "end_index": 9
+  "pagination": {
+    "next": 0,
+    "previous": 0,
+    "count": 9,
+    "current": 1,
+    "total_pages": 1,
+    "start_index": 1,
+    "end_index": 9
+  },
+  "results": [
+    {
+      "pk": "183fc5fa-a0f0-4000-8060-2be5c0454780",
+      "name": "Application 1",
+      "slug": "application1",
+      "provider": 18,
+      "provider_obj": {
+        "pk": 18,
+        "name": "application1",
+        "authorization_flow": "183fc5fa-a0f0-4000-89c4-15372ea21d80",
+        "property_mappings": [
+          "98fc82ed-8828-4c23-92eb-962cac91494c",
+          "4c88c4e7-31a9-472f-963e-647fa6615946",
+          "dbb813b1-3bff-4f29-8d33-22f1943554bd"
+        ],
+        "component": "ak-provider-oauth2-form",
+        "assigned_application_slug": "application1",
+        "assigned_application_name": "Application 1",
+        "verbose_name": "OAuth2/OpenID Provider",
+        "verbose_name_plural": "OAuth2/OpenID Providers",
+        "meta_model_name": "authentik_providers_oauth2.oauth2provider"
+      },
+      "launch_url": "",
+      "open_in_new_tab": false,
+      "meta_launch_url": "",
+      "meta_icon_url": null,
+      "meta_description": "",
+      "meta_publisher": "",
+      "policy_engine_mode": "any",
+      "group": ""
     },
-    "results": [
-        {
-            "pk": "183fc5fa-a0f0-4000-8060-2be5c0454780",
-            "name": "Application 1",
-            "slug": "application1",
-            "provider": 18,
-            "provider_obj": {
-                "pk": 18,
-                "name": "application1",
-                "authorization_flow": "183fc5fa-a0f0-4000-89c4-15372ea21d80",
-                "property_mappings": [
-                    "98fc82ed-8828-4c23-92eb-962cac91494c",
-                    "4c88c4e7-31a9-472f-963e-647fa6615946",
-                    "dbb813b1-3bff-4f29-8d33-22f1943554bd"
-                ],
-                "component": "ak-provider-oauth2-form",
-                "assigned_application_slug": "application1",
-                "assigned_application_name": "Application 1",
-                "verbose_name": "OAuth2/OpenID Provider",
-                "verbose_name_plural": "OAuth2/OpenID Providers",
-                "meta_model_name": "authentik_providers_oauth2.oauth2provider"
-            },
-            "launch_url": "",
-            "open_in_new_tab": false,
-            "meta_launch_url": "",
-            "meta_icon": null,
-            "meta_description": "",
-            "meta_publisher": "",
-            "policy_engine_mode": "any",
-            "group": ""
-        },
-        {
-            "pk": "183fc5fa-a0f0-4000-8060-2be5c0454781",
-            "name": "Application 2",
-            "slug": "application2",
-            "provider": 5,
-            "provider_obj": {
-                "pk": 5,
-                "name": "Application 2",
-                "authorization_flow": "183fc5fa-a0f0-4000-89c4-15372ea21d81",
-                "property_mappings": [
-                    "5ca605a3-2aa2-4e59-8c65-cbbabd2ba3e0",
-                    "fbf159df-4280-49bb-afac-4286f8f8235b",
-                    "ca9e6870-a986-4e41-b740-31a6ceb7b606",
-                    "3558c7bf-20c4-4c3e-86d3-7025557f400e",
-                    "49e73a4e-c40e-4d3f-9bf3-8326afb095aa",
-                    "c659d81e-4887-4ea7-95e9-383fac857719",
-                    "cb5ccf4a-5761-405f-8517-b932ddea08dc"
-                ],
-                "component": "ak-provider-saml-form",
-                "assigned_application_slug": "application2",
-                "assigned_application_name": "Application 2",
-                "verbose_name": "SAML Provider",
-                "verbose_name_plural": "SAML Providers",
-                "meta_model_name": "authentik_providers_saml.samlprovider"
-            },
-            "launch_url": "https://wiki.synalpheus.local",
-            "open_in_new_tab": false,
-            "meta_launch_url": "https://wiki.synalpheus.local",
-            "meta_icon": "/media/application-icons/application2_V1bVWXA.png",
-            "meta_description": "This application is an application.",
-            "meta_publisher": "",
-            "policy_engine_mode": "any",
-            "group": ""
-        },
-        {
-            "pk": "183fc5fa-a0f0-4000-8060-2be5c0454782",
-            "name": "Application 3",
-            "slug": "application3",
-            "provider": 10,
-            "provider_obj": {
-                "pk": 10,
-                "name": "Application 3",
-                "authorization_flow": "183fc5fa-a0f0-4000-89c4-15372ea21d82",
-                "property_mappings": [
-                    "98fc82ed-8828-4c23-92eb-962cac91494c",
-                    "4c88c4e7-31a9-472f-963e-647fa6615946",
-                    "dbb813b1-3bff-4f29-8d33-22f1943554bd",
-                    "fc6dcde8-de19-407e-ab5d-47cda692b570"
-                ],
-                "component": "ak-provider-proxy-form",
-                "assigned_application_slug": "application3",
-                "assigned_application_name": "Application 3",
-                "verbose_name": "Proxy Provider",
-                "verbose_name_plural": "Proxy Providers",
-                "meta_model_name": "authentik_providers_proxy.proxyprovider"
-            },
-            "launch_url": "https://sigil.synalpheus.local",
-            "open_in_new_tab": false,
-            "meta_launch_url": "https://sigil.synalpheus.local",
-            "meta_icon": "/media/application-icons/fvtt.png",
-            "meta_description": "Application 3 a feature-rich application.",
-            "meta_publisher": "",
-            "policy_engine_mode": "any",
-            "group": "Games"
-        },
-        {
-            "pk": "183fc5fa-a0f0-4000-8060-2be5c0454783",
-            "name": "Application 4",
-            "slug": "application4",
-            "provider": 9,
-            "provider_obj": {
-                "pk": 9,
-                "name": "Application 4",
-                "authorization_flow": "183fc5fa-a0f0-4000-89c4-15372ea21d83",
-                "property_mappings": [
-                    "98fc82ed-8828-4c23-92eb-962cac91494c",
-                    "4c88c4e7-31a9-472f-963e-647fa6615946",
-                    "dbb813b1-3bff-4f29-8d33-22f1943554bd",
-                    "fc6dcde8-de19-407e-ab5d-47cda692b570"
-                ],
-                "component": "ak-provider-proxy-form",
-                "assigned_application_slug": "application4",
-                "assigned_application_name": "Application 4",
-                "verbose_name": "Proxy Provider",
-                "verbose_name_plural": "Proxy Providers",
-                "meta_model_name": "authentik_providers_proxy.proxyprovider"
-            },
-            "launch_url": "https://home.synalpheus.local",
-            "open_in_new_tab": false,
-            "meta_launch_url": "https://home.synalpheus.local",
-            "meta_icon": "/media/application-icons/application4.png",
-            "meta_description": "Open source application.",
-            "meta_publisher": "",
-            "policy_engine_mode": "any",
-            "group": "Home"
-        },
-        {
-            "pk": "183fc5fa-a0f0-4000-8060-2be5c0454784",
-            "name": "Application 5",
-            "slug": "application5",
-            "provider": 6,
-            "provider_obj": {
-                "pk": 6,
-                "name": "Application 5",
-                "authorization_flow": "183fc5fa-a0f0-4000-89c4-15372ea21d84",
-                "property_mappings": [],
-                "component": "ak-provider-ldap-form",
-                "assigned_application_slug": "application5",
-                "assigned_application_name": "Application 5",
-                "verbose_name": "LDAP Provider",
-                "verbose_name_plural": "LDAP Providers",
-                "meta_model_name": "authentik_providers_ldap.ldapprovider"
-            },
-            "launch_url": "https://kitchen.synalpheus.local",
-            "open_in_new_tab": false,
-            "meta_launch_url": "https://kitchen.synalpheus.local",
-            "meta_icon": "/media/application-icons/android-chrome-512x512.png",
-            "meta_description": "A self-hosted application.",
-            "meta_publisher": "",
-            "policy_engine_mode": "any",
-            "group": ""
-        },
-        {
-            "pk": "183fc5fa-a0f0-4000-8060-2be5c0454785",
-            "name": "Application 6",
-            "slug": "application6",
-            "provider": 14,
-            "provider_obj": {
-                "pk": 14,
-                "name": "Nextcloud",
-                "authorization_flow": "183fc5fa-a0f0-4000-89c4-15372ea21d85",
-                "property_mappings": [
-                    "5ca605a3-2aa2-4e59-8c65-cbbabd2ba3e0",
-                    "fbf159df-4280-49bb-afac-4286f8f8235b",
-                    "0877e325-fca9-4bd6-98c8-ca964a5c16ff",
-                    "ca9e6870-a986-4e41-b740-31a6ceb7b606",
-                    "3558c7bf-20c4-4c3e-86d3-7025557f400e",
-                    "49e73a4e-c40e-4d3f-9bf3-8326afb095aa",
-                    "cb5ccf4a-5761-405f-8517-b932ddea08dc"
-                ],
-                "component": "ak-provider-saml-form",
-                "assigned_application_slug": "application6",
-                "assigned_application_name": "Application 6",
-                "verbose_name": "SAML Provider",
-                "verbose_name_plural": "SAML Providers",
-                "meta_model_name": "authentik_providers_saml.samlprovider"
-            },
-            "launch_url": "https://clouds.synalpheus.local",
-            "open_in_new_tab": false,
-            "meta_launch_url": "https://clouds.synalpheus.local",
-            "meta_icon": "/media/application-icons/application6.jpg",
-            "meta_description": "The self-hosted application.",
-            "meta_publisher": "",
-            "policy_engine_mode": "any",
-            "group": ""
-        },
-        {
-            "pk": "183fc5fa-a0f0-4000-8060-2be5c0454786",
-            "name": "Application 7",
-            "slug": "application7",
-            "provider": null,
-            "provider_obj": null,
-            "launch_url": "https://benthos.synalpheus.local",
-            "open_in_new_tab": false,
-            "meta_launch_url": "https://benthos.synalpheus.local",
-            "meta_icon": "/media/application-icons/application7-logo.png",
-            "meta_description": "Media streaming",
-            "meta_publisher": "",
-            "policy_engine_mode": "any",
-            "group": "Home"
-        },
-        {
-            "pk": "183fc5fa-a0f0-4000-8060-2be5c0454787",
-            "name": "Synalpheus",
-            "slug": "synalpheus",
-            "provider": 12,
-            "provider_obj": {
-                "pk": 12,
-                "name": "Synalpheus",
-                "authorization_flow": "183fc5fa-a0f0-4000-89c4-15372ea21d87",
-                "property_mappings": [
-                    "98fc82ed-8828-4c23-92eb-962cac91494c",
-                    "4c88c4e7-31a9-472f-963e-647fa6615946",
-                    "dbb813b1-3bff-4f29-8d33-22f1943554bd"
-                ],
-                "component": "ak-provider-oauth2-form",
-                "assigned_application_slug": "synalpheus",
-                "assigned_application_name": "Synalpheus",
-                "verbose_name": "OAuth2/OpenID Provider",
-                "verbose_name_plural": "OAuth2/OpenID Providers",
-                "meta_model_name": "authentik_providers_oauth2.oauth2provider"
-            },
-            "launch_url": "https://www.synalpheus.local",
-            "open_in_new_tab": false,
-            "meta_launch_url": "https://www.synalpheus.local",
-            "meta_icon": null,
-            "meta_description": "",
-            "meta_publisher": "",
-            "policy_engine_mode": "any",
-            "group": ""
-        }
-    ]
+    {
+      "pk": "183fc5fa-a0f0-4000-8060-2be5c0454781",
+      "name": "Application 2",
+      "slug": "application2",
+      "provider": 5,
+      "provider_obj": {
+        "pk": 5,
+        "name": "Application 2",
+        "authorization_flow": "183fc5fa-a0f0-4000-89c4-15372ea21d81",
+        "property_mappings": [
+          "5ca605a3-2aa2-4e59-8c65-cbbabd2ba3e0",
+          "fbf159df-4280-49bb-afac-4286f8f8235b",
+          "ca9e6870-a986-4e41-b740-31a6ceb7b606",
+          "3558c7bf-20c4-4c3e-86d3-7025557f400e",
+          "49e73a4e-c40e-4d3f-9bf3-8326afb095aa",
+          "c659d81e-4887-4ea7-95e9-383fac857719",
+          "cb5ccf4a-5761-405f-8517-b932ddea08dc"
+        ],
+        "component": "ak-provider-saml-form",
+        "assigned_application_slug": "application2",
+        "assigned_application_name": "Application 2",
+        "verbose_name": "SAML Provider",
+        "verbose_name_plural": "SAML Providers",
+        "meta_model_name": "authentik_providers_saml.samlprovider"
+      },
+      "launch_url": "https://wiki.synalpheus.local",
+      "open_in_new_tab": false,
+      "meta_launch_url": "https://wiki.synalpheus.local",
+      "meta_icon_url": "/media/application-icons/application2_V1bVWXA.png",
+      "meta_description": "This application is an application.",
+      "meta_publisher": "",
+      "policy_engine_mode": "any",
+      "group": ""
+    },
+    {
+      "pk": "183fc5fa-a0f0-4000-8060-2be5c0454782",
+      "name": "Application 3",
+      "slug": "application3",
+      "provider": 10,
+      "provider_obj": {
+        "pk": 10,
+        "name": "Application 3",
+        "authorization_flow": "183fc5fa-a0f0-4000-89c4-15372ea21d82",
+        "property_mappings": [
+          "98fc82ed-8828-4c23-92eb-962cac91494c",
+          "4c88c4e7-31a9-472f-963e-647fa6615946",
+          "dbb813b1-3bff-4f29-8d33-22f1943554bd",
+          "fc6dcde8-de19-407e-ab5d-47cda692b570"
+        ],
+        "component": "ak-provider-proxy-form",
+        "assigned_application_slug": "application3",
+        "assigned_application_name": "Application 3",
+        "verbose_name": "Proxy Provider",
+        "verbose_name_plural": "Proxy Providers",
+        "meta_model_name": "authentik_providers_proxy.proxyprovider"
+      },
+      "launch_url": "https://sigil.synalpheus.local",
+      "open_in_new_tab": false,
+      "meta_launch_url": "https://sigil.synalpheus.local",
+      "meta_icon_url": "/media/application-icons/fvtt.png",
+      "meta_description": "Application 3 a feature-rich application.",
+      "meta_publisher": "",
+      "policy_engine_mode": "any",
+      "group": "Games"
+    },
+    {
+      "pk": "183fc5fa-a0f0-4000-8060-2be5c0454783",
+      "name": "Application 4",
+      "slug": "application4",
+      "provider": 9,
+      "provider_obj": {
+        "pk": 9,
+        "name": "Application 4",
+        "authorization_flow": "183fc5fa-a0f0-4000-89c4-15372ea21d83",
+        "property_mappings": [
+          "98fc82ed-8828-4c23-92eb-962cac91494c",
+          "4c88c4e7-31a9-472f-963e-647fa6615946",
+          "dbb813b1-3bff-4f29-8d33-22f1943554bd",
+          "fc6dcde8-de19-407e-ab5d-47cda692b570"
+        ],
+        "component": "ak-provider-proxy-form",
+        "assigned_application_slug": "application4",
+        "assigned_application_name": "Application 4",
+        "verbose_name": "Proxy Provider",
+        "verbose_name_plural": "Proxy Providers",
+        "meta_model_name": "authentik_providers_proxy.proxyprovider"
+      },
+      "launch_url": "https://home.synalpheus.local",
+      "open_in_new_tab": false,
+      "meta_launch_url": "https://home.synalpheus.local",
+      "meta_icon_url": "/media/application-icons/application4.png",
+      "meta_description": "Open source application.",
+      "meta_publisher": "",
+      "policy_engine_mode": "any",
+      "group": "Home"
+    },
+    {
+      "pk": "183fc5fa-a0f0-4000-8060-2be5c0454784",
+      "name": "Application 5",
+      "slug": "application5",
+      "provider": 6,
+      "provider_obj": {
+        "pk": 6,
+        "name": "Application 5",
+        "authorization_flow": "183fc5fa-a0f0-4000-89c4-15372ea21d84",
+        "property_mappings": [],
+        "component": "ak-provider-ldap-form",
+        "assigned_application_slug": "application5",
+        "assigned_application_name": "Application 5",
+        "verbose_name": "LDAP Provider",
+        "verbose_name_plural": "LDAP Providers",
+        "meta_model_name": "authentik_providers_ldap.ldapprovider"
+      },
+      "launch_url": "https://kitchen.synalpheus.local",
+      "open_in_new_tab": false,
+      "meta_launch_url": "https://kitchen.synalpheus.local",
+      "meta_icon_url": "/media/application-icons/android-chrome-512x512.png",
+      "meta_description": "A self-hosted application.",
+      "meta_publisher": "",
+      "policy_engine_mode": "any",
+      "group": ""
+    },
+    {
+      "pk": "183fc5fa-a0f0-4000-8060-2be5c0454785",
+      "name": "Application 6",
+      "slug": "application6",
+      "provider": 14,
+      "provider_obj": {
+        "pk": 14,
+        "name": "Nextcloud",
+        "authorization_flow": "183fc5fa-a0f0-4000-89c4-15372ea21d85",
+        "property_mappings": [
+          "5ca605a3-2aa2-4e59-8c65-cbbabd2ba3e0",
+          "fbf159df-4280-49bb-afac-4286f8f8235b",
+          "0877e325-fca9-4bd6-98c8-ca964a5c16ff",
+          "ca9e6870-a986-4e41-b740-31a6ceb7b606",
+          "3558c7bf-20c4-4c3e-86d3-7025557f400e",
+          "49e73a4e-c40e-4d3f-9bf3-8326afb095aa",
+          "cb5ccf4a-5761-405f-8517-b932ddea08dc"
+        ],
+        "component": "ak-provider-saml-form",
+        "assigned_application_slug": "application6",
+        "assigned_application_name": "Application 6",
+        "verbose_name": "SAML Provider",
+        "verbose_name_plural": "SAML Providers",
+        "meta_model_name": "authentik_providers_saml.samlprovider"
+      },
+      "launch_url": "https://clouds.synalpheus.local",
+      "open_in_new_tab": false,
+      "meta_launch_url": "https://clouds.synalpheus.local",
+      "meta_icon_url": "/media/application-icons/application6.jpg",
+      "meta_description": "The self-hosted application.",
+      "meta_publisher": "",
+      "policy_engine_mode": "any",
+      "group": ""
+    },
+    {
+      "pk": "183fc5fa-a0f0-4000-8060-2be5c0454786",
+      "name": "Application 7",
+      "slug": "application7",
+      "provider": null,
+      "provider_obj": null,
+      "launch_url": "https://benthos.synalpheus.local",
+      "open_in_new_tab": false,
+      "meta_launch_url": "https://benthos.synalpheus.local",
+      "meta_icon_url": "/media/application-icons/application7-logo.png",
+      "meta_description": "Media streaming",
+      "meta_publisher": "",
+      "policy_engine_mode": "any",
+      "group": "Home"
+    },
+    {
+      "pk": "183fc5fa-a0f0-4000-8060-2be5c0454787",
+      "name": "Synalpheus",
+      "slug": "synalpheus",
+      "provider": 12,
+      "provider_obj": {
+        "pk": 12,
+        "name": "Synalpheus",
+        "authorization_flow": "183fc5fa-a0f0-4000-89c4-15372ea21d87",
+        "property_mappings": [
+          "98fc82ed-8828-4c23-92eb-962cac91494c",
+          "4c88c4e7-31a9-472f-963e-647fa6615946",
+          "dbb813b1-3bff-4f29-8d33-22f1943554bd"
+        ],
+        "component": "ak-provider-oauth2-form",
+        "assigned_application_slug": "synalpheus",
+        "assigned_application_name": "Synalpheus",
+        "verbose_name": "OAuth2/OpenID Provider",
+        "verbose_name_plural": "OAuth2/OpenID Providers",
+        "meta_model_name": "authentik_providers_oauth2.oauth2provider"
+      },
+      "launch_url": "https://www.synalpheus.local",
+      "open_in_new_tab": false,
+      "meta_launch_url": "https://www.synalpheus.local",
+      "meta_icon_url": null,
+      "meta_description": "",
+      "meta_publisher": "",
+      "policy_engine_mode": "any",
+      "group": ""
+    }
+  ]
 }
