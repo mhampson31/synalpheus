@@ -5,6 +5,14 @@ What's new in Synalpheus?
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). (Or tries to anyway.)
 
+## [0.6.1] - 2026-04-23
+- Version bumps
+
+## [0.6.0] - 2026-01-21
+- Version bumps
+- Fixed an error with icons due to a change in the Authentik API
+- Makes the page title configurable
+
 ## [v0.5.1] - 2025-12-21
 - Version bumps, it's been a while
 - Rust edition bump to 2024
