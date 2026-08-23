@@ -17,14 +17,8 @@ poem = { version = "3.1", features = [
     "session",
     "csrf",
     "multipart",
-    "redis-session",
     "test",
     "static-files",
-] }
-redis = { version = "0.32", features = [
-    "aio",
-    "tokio-comp",
-    "connection-manager",
 ] }
 reqwest = { version = "0.13", features = ["json", "blocking"] }
 sea-orm = { version = "1.1", features = [

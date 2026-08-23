@@ -12,11 +12,10 @@ use poem::{
     http::StatusCode,
     listener::TcpListener,
     middleware::{CatchPanic, Csrf, Tracing},
-    session::{CookieConfig, RedisStorage, ServerSession, Session},
+    session::{CookieConfig, CookieSession, Session},
     web::Html,
 };
 
-use redis::aio::ConnectionManager;
 use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
@@ -331,18 +330,7 @@ async fn main() -> Result<()> {
     event!(Level::INFO, "Creating application");
     let app = create_app();
 
-    // If $SYN_REDIS_URL is not present, assume it's in a Docker container with the hostname "redis"
-    let redis = env::var("SYN_REDIS_URL").unwrap_or_else(|_| "redis".to_string());
-    let redis = redis::Client::open(format!("redis://{redis}/")).map_err(InternalServerError)?;
-
-    let app = app.with(ServerSession::new(
-        CookieConfig::default(),
-        RedisStorage::new(
-            ConnectionManager::new(redis)
-                .await
-                .map_err(InternalServerError)?,
-        ),
-    ));
+    let app = app.with(CookieSession::new(CookieConfig::default()));
 
     // If $SYN_PORT is not present, we run on 80.
     // url::Url's port methods will probably return a None in our default cases
