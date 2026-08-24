@@ -21,7 +21,7 @@ poem = { version = "3.1", features = [
     "static-files",
 ] }
 reqwest = { version = "0.13", features = ["json", "blocking"] }
-sea-orm = { version = "1.1", features = [
+sea-orm = { version = "2.0", features = [
     "sqlx-postgres",
     "runtime-tokio-rustls",
     "macros",
