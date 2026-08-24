@@ -176,8 +176,8 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse + use<>> {
                     .filter(
                         // Same behavior as Authentik: Limit to apps in groups the user belongs to, or are not in a group
                         Condition::any()
-                            .add(LocalApp::Column::Group.is_in(groups))
-                            .add(LocalApp::Column::Group.eq("")),
+                            .add(LocalApp::COLUMN.group.is_in(groups))
+                            .add(LocalApp::COLUMN.group.eq("")),
                     )
                     .all(db)
                     .await
@@ -331,7 +331,7 @@ pub async fn local_apps() -> Result<impl IntoResponse> {
     let mut context = get_context();
 
     let apps: Vec<entity::application::Model> = LocalApp::Entity::find()
-        .order_by_asc(LocalApp::Column::Id)
+        .order_by_asc(LocalApp::COLUMN.id)
         .all(db)
         .await
         .map_err(InternalServerError)?;
@@ -383,7 +383,6 @@ pub async fn get_edit_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
     let db = get_db();
 
     let mut context = get_context();
-
     if let Some(app) = LocalApp::Entity::find_by_id(id.0)
         .one(db)
         .await
