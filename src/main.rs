@@ -116,7 +116,7 @@ impl ConfigDefaults {
 }
 
 #[derive(Deserialize, Debug)]
-struct SynalpheusConfig {
+pub struct SynalpheusConfig {
     url: Url,
     #[serde(default = "ConfigDefaults::synalpheus_port")]
     port: u16,
