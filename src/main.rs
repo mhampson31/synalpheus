@@ -18,8 +18,8 @@ use poem::{
 
 use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Deserializer, Serialize};
-use std::env;
 use std::sync::{LazyLock, OnceLock};
+use std::{env, fs};
 use tera::{Context, Tera};
 use tracing::{Level, event, instrument};
 use tracing_subscriber;
@@ -81,6 +81,84 @@ struct OpenID {
     introspection_endpoint: Url,
     revocation_endpoint: Url,
     device_authorization_endpoint: Url,
+}
+
+/* This struct is just a collection of default functions for the config file.
+ * Some config fields cannot be defaulted (such as the application URL) so a Default
+ * impl wouldn't be appropriate -- the app should not load with placeholder info.
+ */
+struct ConfigDefaults {}
+
+impl ConfigDefaults {
+    fn synalpheus_port() -> u16 {
+        80
+    }
+
+    fn synalpheus_title() -> String {
+        "Synalpheus".to_string()
+    }
+
+    fn authentik_provider() -> String {
+        "Synalpheus".to_string()
+    }
+
+    fn authentik_redirect() -> String {
+        "/auth/authentik".to_string()
+    }
+
+    fn postgres_port() -> u16 {
+        5432
+    }
+
+    fn postgres_dbname() -> String {
+        "synalpheus".to_string()
+    }
+}
+
+#[derive(Deserialize, Debug)]
+struct SynalpheusConfig {
+    url: Url,
+    #[serde(default = "ConfigDefaults::synalpheus_port")]
+    port: u16,
+    #[serde(default = "ConfigDefaults::synalpheus_title")]
+    title: String,
+    authentik: AuthentikConfig,
+    postgres: PostgresConfig,
+}
+
+#[derive(Deserialize, Debug)]
+
+struct AuthentikConfig {
+    url: Url,
+    client_id: String,
+    client_secret: String,
+    #[serde(default = "ConfigDefaults::authentik_provider")]
+    provider: String,
+    #[serde(default = "ConfigDefaults::authentik_redirect")]
+    redirect: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct PostgresConfig {
+    host: String,
+    #[serde(default = "ConfigDefaults::postgres_port")]
+    port: u16,
+    #[serde(default = "ConfigDefaults::postgres_dbname")]
+    db_name: String,
+    user: String,
+    password: String,
+}
+
+impl PostgresConfig {
+    fn connection_string(&self) -> String {
+        let host = &self.host;
+        let port = &self.port;
+        let db_name = &self.db_name;
+        let user = &self.user;
+        let pwd = &self.password;
+
+        format!("postgres://{user}:{pwd}@{host}:{port}/{db_name}")
+    }
 }
 
 #[cfg(not(test))]
@@ -161,6 +239,10 @@ impl Config {
 
     pub fn new() -> Config {
         /* Set up what we need to run Synalpheus */
+
+        /* Get instance settings from config.toml */
+        let c = fs::read_to_string("config.toml").expect("Missing or unreadable config.toml");
+        let config: SynalpheusConfig = toml::from_str(&c).expect("Could not parse config.toml");
 
         let synalpheus_url = Url::parse(dotenvy::var("SYN_URL").expect("Missing SYN_URL").as_str())
             .expect("SYN_URL is not a parsable URL");
