@@ -13,7 +13,7 @@ use poem::{
 use sea_orm::{
     ActiveModelTrait,
     ActiveValue::{NotSet, Set},
-    ColumnTrait, EntityTrait, QueryFilter, QueryOrder,
+    EntityTrait, QueryFilter, QueryOrder,
     sea_query::Condition,
 };
 use serde::Deserialize;
@@ -140,7 +140,8 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse + use<>> {
         let config = get_config();
 
         let applications_endpoint = config
-            .authentik_url
+            .authentik
+            .url
             .join("api/v3/core/applications/")
             .expect("Could not construct Authentik API URL");
 
@@ -162,7 +163,7 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse + use<>> {
                         .results
                         .into_iter()
                         /* Let's not include this app in the application list */
-                        .filter(|app| app.name.to_lowercase() != config.syn_provider.to_lowercase())
+                        .filter(|app| app.name.to_lowercase() != config.authentik.provider.to_lowercase())
                         /* Follow Authentik's behavior of hiding apps with a launch URL of blank://blank */
                         .filter(|app| app.launch_url.to_lowercase() != "blank://blank")
                         .map(|a| a.into())
@@ -272,8 +273,9 @@ pub async fn login_authorized(
 
     let user_data: User = {
         // Wrapping this in an expression because we only need mutability for a moment
+        let openid = config.openid.clone().expect("No OpenID config found");
         let mut ud = client
-            .get(config.openid.userinfo_endpoint.clone())
+            .get(openid.userinfo_endpoint)
             .bearer_auth(token.access_token().secret())
             .send()
             .await
@@ -301,8 +303,9 @@ pub async fn login_authorized(
 #[handler]
 pub async fn logout(session: &Session) -> Redirect {
     let config = get_config();
+    let openid = config.openid.clone().expect("No OpenID config found");
     session.purge();
-    Redirect::permanent(config.openid.end_session_endpoint.clone())
+    Redirect::permanent(openid.end_session_endpoint)
 }
 
 #[handler]
@@ -607,7 +610,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn can_reach_redirect() {
         let config = get_config();
-        let redirect_path = config.redirect_path.clone();
+        let redirect_path = config.authentik.redirect.clone();
         // send request and check the status code
         let client = TestClient::new(load_test_app());
         client
