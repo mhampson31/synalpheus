@@ -1,0 +1,23 @@
+url = "https://your.synalpheus.url"
+
+# This is only necessary if you want to override the port Synalpheus is running on inside the Docker container.
+port = 80
+
+# How do you want to title Synalpheus in the browser?
+title = 'Synalpheus'
+
+
+[authentik]
+url = "https://your.authentik.url"
+client_id = "Client ID from Authentik"
+client_secret = "Client Secret from Authentik"
+provider = "Synalpheus" # The name of Synalpheus's provider in Authentik. This is case sensitive.
+redirect = "/auth/authentik" # Just enter the path for the OAuth2 redirect, not the full URL
+
+
+[postgres]
+host = 'your.postgres.host' # don't include the protocol here
+port = 5432 # Optional unless you're using a different port
+db_name = 'synalpheus'
+user = 'db user name'
+pwd = 'db user password'

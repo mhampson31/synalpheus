@@ -13,7 +13,6 @@ What works as of v0.5.1?
 * Storing info about applications you're not managing via Authentik in your Postgres database
 * Storing and serving icon images for your non-Authentik apps
 * Displaying the applications to the user
-* Redis sessions
 * Docker integration
 
 Still todo:
@@ -28,7 +27,7 @@ Setup:
   * email
   * offline_access
   * goauthentik.io/api
-3. Configure the .env file for Synalpheus with the appropriate fields
+3. Configure the `config.toml` file for Synalpheus with the appropriate fields
 4. Create a new user in Postgres -- Synalpheus doesn't share a DB user or access with Authentik
 5. Add a service for Synalpheus to your docker-compose.yml:
 
@@ -47,11 +46,4 @@ Setup:
     environment:
       PUID: ${PUID}
       PGUID: ${PGID}
-      SYN_AUTHENTIK_URL: [your Authentik URL]
-      SYN_URL: [your Synalpheus URL]
-      SYN_CLIENT_ID: ${SYN_CLIENT_ID} # Synalpheus's client ID in Authentik
-      SYN_CLIENT_SECRET: ${SYN_CLIENT_SECRET} # Synalpheus's client secret in Authentik
-      SYN_REDIRECT_PATH: "/auth/authentik"
-      SYN_PROVIDER: "Synalpheus"
-      SYN_POSTGRES_URL: "postgres://[db user]:[db password]@postgres/synalpheus"
 ```

@@ -18,7 +18,7 @@ use poem::{
 
 use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Deserializer, Serialize};
-use std::env;
+use std::fs;
 use std::sync::{LazyLock, OnceLock};
 use tera::{Context, Tera};
 use tracing::{Level, event, instrument};
@@ -83,6 +83,122 @@ struct OpenID {
     device_authorization_endpoint: Url,
 }
 
+/* This struct is just a collection of default functions for the config file.
+ * Some config fields cannot be defaulted (such as the application URL) so a Default
+ * impl wouldn't be appropriate -- the app should not load with placeholder info.
+ */
+struct ConfigDefaults {}
+
+impl ConfigDefaults {
+    fn synalpheus_port() -> u16 {
+        80
+    }
+
+    fn synalpheus_title() -> String {
+        "Synalpheus".to_string()
+    }
+
+    fn authentik_provider() -> String {
+        "Synalpheus".to_string()
+    }
+
+    fn authentik_redirect() -> String {
+        "/auth/authentik".to_string()
+    }
+
+    fn postgres_port() -> u16 {
+        5432
+    }
+
+    fn postgres_dbname() -> String {
+        "synalpheus".to_string()
+    }
+}
+
+#[derive(Deserialize, Debug)]
+pub struct SynalpheusConfig {
+    url: Url,
+    #[serde(default = "ConfigDefaults::synalpheus_port")]
+    port: u16,
+    #[serde(default = "ConfigDefaults::synalpheus_title")]
+    title: String,
+    authentik: AuthentikConfig,
+    postgres: PostgresConfig,
+    // This is an Option because it can't be initialized until after the rest of the struct.
+    // Where it gets used elsewhere, the assumption is that the app would not be running if it were None
+    openid: Option<OpenID>,
+}
+
+impl SynalpheusConfig {
+    pub fn new() -> SynalpheusConfig {
+        /* Set up what we need to run Synalpheus
+         * Expect is fine here, since the app can't operate if any of these fail
+         */
+
+        /* Get instance settings from config.toml */
+        let c = fs::read_to_string("config.toml").expect("Missing or unreadable config.toml");
+        let mut config: SynalpheusConfig = toml::from_str(&c).expect("Could not parse config.toml");
+
+        /* Use the Authentik config from the file to get the OpenID data */
+        config.openid = Some(
+            get_openid(config.authentik.well_known())
+                .expect("Could not get OpenID values from Authentik"),
+        );
+
+        config
+    }
+}
+
+#[derive(Deserialize, Debug)]
+struct AuthentikConfig {
+    url: Url,
+    client_id: String,
+    client_secret: String,
+    #[serde(default = "ConfigDefaults::authentik_provider")]
+    provider: String,
+    #[serde(default = "ConfigDefaults::authentik_redirect")]
+    redirect: String,
+}
+
+impl AuthentikConfig {
+    fn well_known(&self) -> Url {
+        self.url
+            .join(
+                format!(
+                    "application/o/{}/.well-known/openid-configuration",
+                    self.provider
+                )
+                .to_lowercase() // The provider is probably uppercase, but the endpoint expects lowercase
+                .as_str(),
+            )
+            // If the well-known URL can't be constructed, the app can't run
+            .expect("Could not construct Authentik well-known URL. Check your provider path.")
+    }
+}
+
+#[derive(Deserialize, Debug)]
+struct PostgresConfig {
+    host: String,
+    #[serde(default = "ConfigDefaults::postgres_port")]
+    port: u16,
+    #[serde(default = "ConfigDefaults::postgres_dbname")]
+    db_name: String,
+    user: String,
+    password: String,
+}
+
+impl PostgresConfig {
+    fn connection_string(&self) -> String {
+        let host = &self.host;
+        let port = &self.port;
+        let db_name = &self.db_name;
+        let user = &self.user;
+        let pwd = &self.password;
+
+        format!("postgres://{user}:{pwd}@{host}:{port}/{db_name}")
+    }
+}
+
 #[cfg(not(test))]
 fn get_openid(well_known: Url) -> Result<OpenID> {
     /* We'll get our OpenID endpoints from Authentik.
@@ -126,104 +242,10 @@ fn get_openid(_well_known: Url) -> Result<OpenID> {
 }
 
 /* This largely holds our Authentik information */
-pub static CONFIG: OnceLock<Config> = OnceLock::new();
+pub static CONFIG: OnceLock<SynalpheusConfig> = OnceLock::new();
 
-#[derive(Debug)]
-pub struct Config {
-    // Our Authentik URL
-    authentik_url: Url,
-
-    // Our Synalpheus URL
-    synalpheus_url: Url,
-
-    // The port we're running on
-    port: u16,
-
-    // The title to show in the browser tab
-    title: String,
-
-    // The name of the provider created for Synalpheus in Authentik
-    syn_provider: String,
-
-    // A structure containing all our OpenID endpoints
-    openid: OpenID,
-
-    // Our Oauth2 configuration info
-    client_id: String,
-    client_secret: String,
-    redirect_path: String,
-}
-
-impl Config {
-    /* We'll use a lot of expect here instead of returning a Result, because the program
-    really shouldn't even run if these don't work.
-    Or in a few cases, we know they're not fallible operations in this context. */
-
-    pub fn new() -> Config {
-        /* Set up what we need to run Synalpheus */
-
-        let synalpheus_url = Url::parse(dotenvy::var("SYN_URL").expect("Missing SYN_URL").as_str())
-            .expect("SYN_URL is not a parsable URL");
-
-        let port: u16 = match dotenvy::var("SYN_PORT") {
-            Ok(p) => p.parse().expect("SYN_PORT is not a valid port number"),
-            Err(_) => 80,
-        };
-
-        let title: String = dotenvy::var("SYN_TITLE").unwrap_or_else(|_| "Synalpheus".to_string());
-
-        /* Set up what we need to talk to Authentik */
-        let authentik_url = dotenvy::var("SYN_AUTHENTIK_URL").expect("Missing SYN_AUTHENTIK_URL");
-        let authentik_url =
-            Url::parse(authentik_url.as_str()).expect("SYN_AUTHENTIK_URL is not a parsable URL");
-
-        let redirect_path =
-            dotenvy::var("SYN_REDIRECT_PATH").unwrap_or_else(|_| "auth/authentik".to_string());
-
-        let syn_provider =
-            dotenvy::var("SYN_PROVIDER").unwrap_or_else(|_| "Synalpheus".to_string());
-
-        let well_known = authentik_url
-            .join(
-                format!("application/o/{syn_provider}/.well-known/openid-configuration")
-                    .to_lowercase() // The provider is probably uppercase, but the endpoint expects lowercase
-                    .as_str(),
-            )
-            .expect("Couldn't construct OpenID well-known endpoint");
-
-        let openid =
-            get_openid(well_known).expect("Could not get OpenID configuration from Authentik");
-
-        Config {
-            authentik_url: authentik_url.clone(),
-
-            syn_provider: syn_provider.clone(),
-
-            openid: openid.clone(),
-
-            client_id: env::var("SYN_CLIENT_ID").expect("Missing SYN_CLIENT_ID!"),
-
-            client_secret: env::var("SYN_CLIENT_SECRET").expect("Missing SYN_CLIENT_SECRET!"),
-
-            redirect_path: redirect_path.clone(),
-
-            synalpheus_url: synalpheus_url.clone(),
-
-            port,
-
-            title,
-        }
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-pub fn get_config() -> &'static Config {
-    CONFIG.get_or_init(Config::new)
+pub fn get_config() -> &'static SynalpheusConfig {
+    CONFIG.get_or_init(SynalpheusConfig::new)
 }
 
 /* Database connection */
@@ -238,7 +260,7 @@ pub fn get_db() -> &'static DatabaseConnection {
  * The main difference will be in the session types, which we do not configure here, since test
  * functions will not use Redis. */
 fn create_app() -> impl Endpoint {
-    let redirect_path = get_config().redirect_path.clone();
+    let redirect_path = get_config().authentik.redirect.clone();
     Route::new()
         // static files
         .at(
@@ -313,12 +335,11 @@ async fn main() -> Result<()> {
 
     event!(Level::INFO, "Starting Synalpheus server");
 
-    CONFIG.set(Config::new()).unwrap();
+    CONFIG.set(SynalpheusConfig::new()).unwrap();
     let config = get_config();
 
     event!(Level::INFO, "Connecting to database");
-    let postgres = env::var("SYN_POSTGRES_URL").expect("Missing SYN_POSTGRES_URL");
-    let db = Database::connect(postgres)
+    let db = Database::connect(config.postgres.connection_string())
         .await
         .expect("Could not connect to database");
 
@@ -332,7 +353,7 @@ async fn main() -> Result<()> {
 
     let app = app.with(CookieSession::new(CookieConfig::default()));
 
-    // If $SYN_PORT is not present, we run on 80.
+    // If port is not specified, run on 80.
     // url::Url's port methods will probably return a None in our default cases
     let port = config.port;
 
@@ -355,16 +376,17 @@ async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
 
 fn get_oauth_client()
 -> Result<BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet>> {
-    let config = CONFIG.get_or_init(Config::new);
+    let config = CONFIG.get_or_init(SynalpheusConfig::new);
+    let openid = config.openid.clone().expect("No OpenID config");
 
-    match config.synalpheus_url.join(config.redirect_path.as_str()) {
-        Ok(redirect_url) => Ok(BasicClient::new(ClientId::new(config.client_id.clone()))
-            .set_client_secret(ClientSecret::new(config.client_secret.clone()))
-            .set_auth_uri(AuthUrl::from_url(
-                config.openid.authorization_endpoint.clone(),
-            ))
-            .set_token_uri(TokenUrl::from_url(config.openid.token_endpoint.clone()))
-            .set_redirect_uri(RedirectUrl::from_url(redirect_url))),
+    match config.url.join(config.authentik.redirect.as_str()) {
+        Ok(redirect_url) => Ok(
+            BasicClient::new(ClientId::new(config.authentik.client_id.clone()))
+                .set_client_secret(ClientSecret::new(config.authentik.client_secret.clone()))
+                .set_auth_uri(AuthUrl::from_url(openid.authorization_endpoint.clone()))
+                .set_token_uri(TokenUrl::from_url(openid.token_endpoint.clone()))
+                .set_redirect_uri(RedirectUrl::from_url(redirect_url)),
+        ),
         Err(_) => Err(Error::from_string(
             "Cannot parse Oath2 URLs",
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -520,7 +542,7 @@ where
     D: Deserializer<'de>,
 {
     let config = get_config();
-    let authentik_url = config.authentik_url.clone();
+    let authentik_url = config.authentik.url.clone();
 
     let url = match Option::<String>::deserialize(de)? {
         Some(key) => format!("{authentik_url}{key}"),
@@ -606,7 +628,7 @@ mod tests {
 
         let config = get_config();
         let control = IconURLTester {
-            icon: format!("{}/test.png", config.authentik_url),
+            icon: format!("{}/test.png", config.authentik.url),
             null_icon: "".to_string(),
         };
 
