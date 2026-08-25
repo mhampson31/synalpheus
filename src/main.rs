@@ -124,36 +124,25 @@ pub struct SynalpheusConfig {
     title: String,
     authentik: AuthentikConfig,
     postgres: PostgresConfig,
+    // This is an Option because it can't be initialized until after the rest of the struct.
+    // Where it gets used elsewhere, the assumption is that the app would not be running if it were None
     openid: Option<OpenID>,
 }
 
 impl SynalpheusConfig {
-    /* We'll use a lot of expect here instead of returning a Result, because the program
-    really shouldn't even run if these don't work.
-    Or in a few cases, we know they're not fallible operations in this context. */
-
     pub fn new() -> SynalpheusConfig {
-        /* Set up what we need to run Synalpheus */
+        /* Set up what we need to run Synalpheus
+         * Expect is fine here, since the app can't operate if any of these fail
+         */
 
         /* Get instance settings from config.toml */
         let c = fs::read_to_string("config.toml").expect("Missing or unreadable config.toml");
         let mut config: SynalpheusConfig = toml::from_str(&c).expect("Could not parse config.toml");
 
-        let well_known = config
-            .authentik
-            .url
-            .join(
-                format!(
-                    "application/o/{}/.well-known/openid-configuration",
-                    config.authentik.provider
-                )
-                .to_lowercase() // The provider is probably uppercase, but the endpoint expects lowercase
-                .as_str(),
-            )
-            .expect("Couldn't construct OpenID well-known endpoint");
-
+        /* Use the Authentik config from the file to get the OpenID data */
         config.openid = Some(
-            get_openid(well_known).expect("Could not get OpenID configuration from Authentik"),
+            get_openid(config.authentik.well_known())
+                .expect("Could not get OpenID values from Authentik"),
         );
 
         config
@@ -169,6 +158,22 @@ struct AuthentikConfig {
     provider: String,
     #[serde(default = "ConfigDefaults::authentik_redirect")]
     redirect: String,
+}
+
+impl AuthentikConfig {
+    fn well_known(&self) -> Url {
+        self.url
+            .join(
+                format!(
+                    "application/o/{}/.well-known/openid-configuration",
+                    self.provider
+                )
+                .to_lowercase() // The provider is probably uppercase, but the endpoint expects lowercase
+                .as_str(),
+            )
+            // If the well-known URL can't be constructed, the app can't run
+            .expect("Could not construct Authentik well-known URL. Check your provider path.")
+    }
 }
 
 #[derive(Deserialize, Debug)]
