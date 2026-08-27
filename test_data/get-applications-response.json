@@ -207,7 +207,7 @@
       "slug": "application7",
       "provider": null,
       "provider_obj": null,
-      "launch_url": "https://benthos.synalpheus.local",
+      "launch_url": "blank://blank",
       "open_in_new_tab": false,
       "meta_launch_url": "https://benthos.synalpheus.local",
       "meta_icon_url": "/media/application-icons/application7-logo.png",
