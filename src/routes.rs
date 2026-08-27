@@ -166,6 +166,8 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse + use<>> {
                         .filter(|app| app.name.to_lowercase() != config.authentik.provider.to_lowercase())
                         /* Follow Authentik's behavior of hiding apps with a launch URL of blank://blank */
                         .filter(|app| app.launch_url.to_lowercase() != "blank://blank")
+                        /* Observe Authentik's dashboard display flag */
+                        .filter(|app| !app.meta_hide)
                         .map(|a| a.into())
                         .collect(),
                 );

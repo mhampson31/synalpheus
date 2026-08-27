@@ -470,6 +470,7 @@ pub struct AuthentikApp {
     meta_publisher: String,
     policy_engine_mode: String,
     group: String,
+    meta_hide: bool,
 }
 
 /* We have two sources for applications right now, Authentik and our local data via SeaORM.
