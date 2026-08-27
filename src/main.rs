@@ -16,7 +16,7 @@ use poem::{
     web::Html,
 };
 
-use sea_orm::{Database, DatabaseConnection};
+use sea_orm::{Database, DatabaseConnection, EntityTrait, QueryFilter, sea_query::Condition};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fs;
 use std::sync::{LazyLock, OnceLock};
@@ -25,6 +25,7 @@ use tracing::{Level, event, instrument};
 use tracing_subscriber;
 use url::Url;
 
+use entity::application as LocalApp;
 use migration::{Migrator, MigratorTrait};
 
 mod data;
@@ -196,6 +197,56 @@ impl PostgresConfig {
         let pwd = &self.password;
 
         format!("postgres://{user}:{pwd}@{host}:{port}/{db_name}")
+    }
+}
+
+/* Holds the list of applications for the user */
+struct AppList {
+    apps: Vec<AppCard>,
+}
+
+impl AppList {
+    fn new() -> AppList {
+        AppList { apps: Vec::new() }
+    }
+
+    #[instrument(skip_all)]
+    fn add_authentik_apps(&mut self, auth_apps: AppResponse) {
+        let config = get_config();
+        self.apps.append(
+            &mut auth_apps
+                .results
+                .into_iter()
+                /* Let's not include this app in the application list */
+                .filter(|app| app.name.to_lowercase() != config.authentik.provider.to_lowercase())
+                /* Follow Authentik's behavior of hiding apps with a launch URL of blank://blank */
+                .filter(|app| app.launch_url.to_lowercase() != "blank://blank")
+                /* Observe Authentik's dashboard display flag */
+                .filter(|app| !app.meta_hide)
+                .map(|a| a.into())
+                .collect(),
+        );
+    }
+
+    async fn add_local_apps(&mut self, groups: &Vec<String>) -> Result<impl IntoResponse> {
+        /* local applications */
+        let db = get_db();
+        self.apps.append(
+            &mut LocalApp::Entity::find()
+                .filter(
+                    // Same behavior as Authentik: Limit to apps in groups the user belongs to, or are not in a group
+                    Condition::any()
+                        .add(LocalApp::COLUMN.group.is_in(groups))
+                        .add(LocalApp::COLUMN.group.eq("")),
+                )
+                .all(db)
+                .await
+                .map_err(InternalServerError)?
+                .into_iter()
+                .map(|a| a.into())
+                .collect(),
+        );
+        Ok(())
     }
 }
 
