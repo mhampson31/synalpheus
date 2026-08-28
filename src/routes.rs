@@ -13,8 +13,7 @@ use poem::{
 use sea_orm::{
     ActiveModelTrait,
     ActiveValue::{NotSet, Set},
-    EntityTrait, QueryFilter, QueryOrder,
-    sea_query::Condition,
+    EntityTrait, QueryOrder,
 };
 use serde::Deserialize;
 use tracing::{Level, event, instrument};
@@ -27,7 +26,8 @@ use std::{
 };
 
 use super::{
-    AppCard, AppResponse, TEMPLATES, User, get_config, get_context, get_db, get_oauth_client,
+    AppCard, AppList, AppResponse, TEMPLATES, User, get_config, get_context, get_db,
+    get_oauth_client,
 };
 
 use entity::application as LocalApp;
@@ -135,7 +135,7 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse + use<>> {
             .unwrap_or(vec![]);
 
         /* This vec will hold our apps, whether from Authentik or the DB */
-        let mut applications: Vec<AppCard> = Vec::new();
+        let mut applications: AppList = AppList::new();
 
         let config = get_config();
 
@@ -158,39 +158,15 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse + use<>> {
                 .await
                 .map_err(InternalServerError)?;
 
-            applications.append(
-                    &mut auth_apps
-                        .results
-                        .into_iter()
-                        /* Let's not include this app in the application list */
-                        .filter(|app| app.name.to_lowercase() != config.authentik.provider.to_lowercase())
-                        /* Follow Authentik's behavior of hiding apps with a launch URL of blank://blank */
-                        .filter(|app| app.launch_url.to_lowercase() != "blank://blank")
-                        .map(|a| a.into())
-                        .collect(),
-                );
+            applications.add_authentik_apps(auth_apps);
+            applications
+                .add_local_apps(&groups)
+                .await
+                .map_err(InternalServerError)?;
 
-            /* local applications */
-            let db = get_db();
-            applications.append(
-                &mut LocalApp::Entity::find()
-                    .filter(
-                        // Same behavior as Authentik: Limit to apps in groups the user belongs to, or are not in a group
-                        Condition::any()
-                            .add(LocalApp::COLUMN.group.is_in(groups))
-                            .add(LocalApp::COLUMN.group.eq("")),
-                    )
-                    .all(db)
-                    .await
-                    .map_err(InternalServerError)?
-                    .into_iter()
-                    .map(|a| a.into())
-                    .collect(),
-            );
+            applications.apps.sort_by_key(|app| app.group.clone());
 
-            applications.sort_by_key(|app| app.group.clone());
-
-            context.insert("applications", &applications);
+            context.insert("applications", &applications.apps);
         } else {
             event!(Level::DEBUG, "{}", response.text().await.unwrap());
         }

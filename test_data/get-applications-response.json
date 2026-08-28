@@ -37,7 +37,8 @@
       "meta_description": "",
       "meta_publisher": "",
       "policy_engine_mode": "any",
-      "group": ""
+      "group": "",
+      "meta_hide": false
     },
     {
       "pk": "183fc5fa-a0f0-4000-8060-2be5c0454781",
@@ -71,7 +72,8 @@
       "meta_description": "This application is an application.",
       "meta_publisher": "",
       "policy_engine_mode": "any",
-      "group": ""
+      "group": "",
+      "meta_hide": false
     },
     {
       "pk": "183fc5fa-a0f0-4000-8060-2be5c0454782",
@@ -102,7 +104,8 @@
       "meta_description": "Application 3 a feature-rich application.",
       "meta_publisher": "",
       "policy_engine_mode": "any",
-      "group": "Games"
+      "group": "Games",
+      "meta_hide": false
     },
     {
       "pk": "183fc5fa-a0f0-4000-8060-2be5c0454783",
@@ -133,7 +136,8 @@
       "meta_description": "Open source application.",
       "meta_publisher": "",
       "policy_engine_mode": "any",
-      "group": "Home"
+      "group": "Home",
+      "meta_hide": false
     },
     {
       "pk": "183fc5fa-a0f0-4000-8060-2be5c0454784",
@@ -159,7 +163,8 @@
       "meta_description": "A self-hosted application.",
       "meta_publisher": "",
       "policy_engine_mode": "any",
-      "group": ""
+      "group": "",
+      "meta_hide": false
     },
     {
       "pk": "183fc5fa-a0f0-4000-8060-2be5c0454785",
@@ -193,7 +198,8 @@
       "meta_description": "The self-hosted application.",
       "meta_publisher": "",
       "policy_engine_mode": "any",
-      "group": ""
+      "group": "",
+      "meta_hide": true
     },
     {
       "pk": "183fc5fa-a0f0-4000-8060-2be5c0454786",
@@ -201,14 +207,15 @@
       "slug": "application7",
       "provider": null,
       "provider_obj": null,
-      "launch_url": "https://benthos.synalpheus.local",
+      "launch_url": "blank://blank",
       "open_in_new_tab": false,
       "meta_launch_url": "https://benthos.synalpheus.local",
       "meta_icon_url": "/media/application-icons/application7-logo.png",
       "meta_description": "Media streaming",
       "meta_publisher": "",
       "policy_engine_mode": "any",
-      "group": "Home"
+      "group": "Home",
+      "meta_hide": false
     },
     {
       "pk": "183fc5fa-a0f0-4000-8060-2be5c0454787",
@@ -238,7 +245,8 @@
       "meta_description": "",
       "meta_publisher": "",
       "policy_engine_mode": "any",
-      "group": ""
+      "group": "",
+      "meta_hide": false
     }
   ]
 }
