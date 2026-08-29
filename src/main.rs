@@ -331,8 +331,6 @@ fn create_app() -> impl Endpoint {
 #[tokio::main]
 #[instrument]
 async fn main() -> Result<()> {
-    dotenvy::dotenv().ok();
-
     tracing_subscriber::fmt().init();
 
     event!(Level::INFO, "Starting Synalpheus server");
