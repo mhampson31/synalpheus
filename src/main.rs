@@ -95,6 +95,12 @@ impl OpenID {
         /* This can get flagged as bot activity. Not sure if there's a better way to craft the request,
         but maybe the user agent can help to craft an exception. */
 
+        event!(
+            Level::INFO,
+            "Getting OpenID config from {}",
+            well_known.as_str()
+        );
+
         let openid = cfg_select! {
             /* Dummy OpenID fields for testing */
             test => OpenID {
