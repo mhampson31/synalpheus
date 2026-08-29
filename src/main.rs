@@ -84,6 +84,49 @@ struct OpenID {
     device_authorization_endpoint: Url,
 }
 
+impl OpenID {
+    fn fetch(well_known: Url) -> Result<OpenID> {
+        /* Get OpenID endpoints from Authentik.
+        To do this, we'll use a quick blocking task while we make the request to Authentik.
+        This only happens on initial startup, so shouldn't be a big deal. */
+
+        // Todo: better error handling. What if it's not a success response?
+
+        /* This can get flagged as bot activity. Not sure if there's a better way to craft the request,
+        but maybe the user agent can help to craft an exception. */
+
+        #[cfg(test)]
+        /* Dummy OpenID fields for testing */
+        let openid = OpenID {
+            issuer: Url::parse("http://localhost").unwrap(),
+            authorization_endpoint: Url::parse("http://localhost").unwrap(),
+            token_endpoint: Url::parse("http://localhost").unwrap(),
+            userinfo_endpoint: Url::parse("http://localhost").unwrap(),
+            end_session_endpoint: Url::parse("http://localhost").unwrap(),
+            introspection_endpoint: Url::parse("http://localhost").unwrap(),
+            revocation_endpoint: Url::parse("http://localhost").unwrap(),
+            device_authorization_endpoint: Url::parse("http://localhost").unwrap(),
+        };
+
+        #[cfg(not(test))]
+        let openid = tokio::task::block_in_place(|| {
+            let openid = reqwest::blocking::Client::builder()
+                .user_agent("Synalpheus")
+                .build()
+                .expect("Could not build client")
+                .get(well_known)
+                .send()
+                .expect("Could not get OpenID config")
+                .json::<OpenID>()
+                .expect("Could not parse OpenID response");
+
+            openid
+        });
+
+        Ok(openid)
+    }
+}
+
 /* This struct is just a collection of default functions for the config file.
  * Some config fields cannot be defaulted (such as the application URL) so a Default
  * impl wouldn't be appropriate -- the app should not load with placeholder info.
@@ -142,7 +185,7 @@ impl SynalpheusConfig {
 
         /* Use the Authentik config from the file to get the OpenID data */
         config.openid = Some(
-            get_openid(config.authentik.well_known())
+            OpenID::fetch(config.authentik.well_known())
                 .expect("Could not get OpenID values from Authentik"),
         );
 
@@ -198,48 +241,6 @@ impl PostgresConfig {
 
         format!("postgres://{user}:{pwd}@{host}:{port}/{db_name}")
     }
-}
-
-#[cfg(not(test))]
-fn get_openid(well_known: Url) -> Result<OpenID> {
-    /* We'll get our OpenID endpoints from Authentik.
-    To do this, we'll use a quick blocking task while we make the request to Authentik.
-    This only happens on initial startup, so shouldn't be a big deal. */
-
-    // Todo: better error handling. What if it's not a success response?
-
-    /* This can get flagged as bot activity. Not sure if there's a better way to craft the request,
-    but maybe the user agent can help to craft an exception. */
-    let openid = tokio::task::block_in_place(|| {
-        let openid = reqwest::blocking::Client::builder()
-            .user_agent("Synalpheus")
-            .build()
-            .expect("Could not build client")
-            .get(well_known)
-            .send()
-            .expect("Could not get OpenID config")
-            .json::<OpenID>()
-            .expect("Could not parse OpenID response");
-
-        openid
-    });
-    Ok(openid)
-}
-
-#[cfg(test)]
-fn get_openid(_well_known: Url) -> Result<OpenID> {
-    /* Dummy OpenID fields */
-    let openid = OpenID {
-        issuer: Url::parse("http://localhost").unwrap(),
-        authorization_endpoint: Url::parse("http://localhost").unwrap(),
-        token_endpoint: Url::parse("http://localhost").unwrap(),
-        userinfo_endpoint: Url::parse("http://localhost").unwrap(),
-        end_session_endpoint: Url::parse("http://localhost").unwrap(),
-        introspection_endpoint: Url::parse("http://localhost").unwrap(),
-        revocation_endpoint: Url::parse("http://localhost").unwrap(),
-        device_authorization_endpoint: Url::parse("http://localhost").unwrap(),
-    };
-    Ok(openid)
 }
 
 /* This largely holds our Authentik information */
