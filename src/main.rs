@@ -95,33 +95,33 @@ impl OpenID {
         /* This can get flagged as bot activity. Not sure if there's a better way to craft the request,
         but maybe the user agent can help to craft an exception. */
 
-        #[cfg(test)]
-        /* Dummy OpenID fields for testing */
-        let openid = OpenID {
-            issuer: Url::parse("http://localhost").unwrap(),
-            authorization_endpoint: Url::parse("http://localhost").unwrap(),
-            token_endpoint: Url::parse("http://localhost").unwrap(),
-            userinfo_endpoint: Url::parse("http://localhost").unwrap(),
-            end_session_endpoint: Url::parse("http://localhost").unwrap(),
-            introspection_endpoint: Url::parse("http://localhost").unwrap(),
-            revocation_endpoint: Url::parse("http://localhost").unwrap(),
-            device_authorization_endpoint: Url::parse("http://localhost").unwrap(),
+        let openid = cfg_select! {
+            /* Dummy OpenID fields for testing */
+            test => OpenID {
+                        issuer: Url::parse("http://localhost").unwrap(),
+                        authorization_endpoint: Url::parse("http://localhost").unwrap(),
+                        token_endpoint: Url::parse("http://localhost").unwrap(),
+                        userinfo_endpoint: Url::parse("http://localhost").unwrap(),
+                        end_session_endpoint: Url::parse("http://localhost").unwrap(),
+                        introspection_endpoint: Url::parse("http://localhost").unwrap(),
+                        revocation_endpoint: Url::parse("http://localhost").unwrap(),
+                        device_authorization_endpoint: Url::parse("http://localhost").unwrap(),
+                    },
+            /* get real values from Authentik */
+            _ => {
+                tokio::task::block_in_place(|| {
+                    reqwest::blocking::Client::builder()
+                        .user_agent("Synalpheus")
+                        .build()
+                        .expect("Could not build client")
+                        .get(well_known)
+                        .send()
+                        .expect("Could not get OpenID config")
+                        .json::<OpenID>()
+                        .expect("Could not parse OpenID response")
+                })
+            }
         };
-
-        #[cfg(not(test))]
-        let openid = tokio::task::block_in_place(|| {
-            let openid = reqwest::blocking::Client::builder()
-                .user_agent("Synalpheus")
-                .build()
-                .expect("Could not build client")
-                .get(well_known)
-                .send()
-                .expect("Could not get OpenID config")
-                .json::<OpenID>()
-                .expect("Could not parse OpenID response");
-
-            openid
-        });
 
         Ok(openid)
     }
