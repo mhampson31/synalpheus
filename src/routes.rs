@@ -542,12 +542,10 @@ pub async fn post_icon_form(id: Path<u8>, mut multipart: Multipart) -> Result<im
     }
 }
 
-/* *** TESTS *** */
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tests::load_test_app;
+    use crate::application::create_app;
     use poem::test::TestClient;
 
     /* Remember to use flavor = "multi_thread" for any tests that use CONFIG (even indirectly).
@@ -556,14 +554,14 @@ mod tests {
     /* We expect the main index to be generally reachable */
     #[tokio::test(flavor = "multi_thread")]
     async fn can_reach_index() {
-        let client = TestClient::new(load_test_app());
+        let client = TestClient::new(create_app());
         client.get("/").send().await.assert_status_is_ok();
     }
 
     /* We expect the login page to redirect to Authentik */
     #[tokio::test(flavor = "multi_thread")]
     async fn can_reach_login() {
-        let client = TestClient::new(load_test_app());
+        let client = TestClient::new(create_app());
         client
             .get("/login")
             .send()
@@ -574,7 +572,7 @@ mod tests {
     /* We expect the logout page to redirect back home */
     #[tokio::test(flavor = "multi_thread")]
     async fn can_reach_logout() {
-        let client = TestClient::new(load_test_app());
+        let client = TestClient::new(create_app());
         client
             .get("/logout")
             .send()
@@ -588,7 +586,7 @@ mod tests {
         let config = get_config();
         let redirect_path = config.authentik.redirect.clone();
         // send request and check the status code
-        let client = TestClient::new(load_test_app());
+        let client = TestClient::new(create_app());
         client
             .get(format!("{redirect_path}?code=foo&state=bar"))
             .send()
