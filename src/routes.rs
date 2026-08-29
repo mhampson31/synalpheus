@@ -318,7 +318,7 @@ pub async fn local_apps() -> Result<impl IntoResponse> {
     context.insert("applications", &apps);
 
     let response = TEMPLATES
-        .render("local_apps.html", &context)
+        .render("local_apps/local_apps.html", &context)
         .map_err(InternalServerError)?;
     Ok(Html(response).into_response())
 }
@@ -370,7 +370,7 @@ pub async fn get_edit_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
         context.insert("app", &app);
 
         let response = TEMPLATES
-            .render("local_app_update.html", &context)
+            .render("local_apps/update.html", &context)
             .map_err(InternalServerError)?;
         Ok(Html(response).into_response())
     } else {
@@ -383,7 +383,7 @@ pub async fn get_new_local_app() -> Result<impl IntoResponse> {
     let mut context = get_context();
 
     let response = TEMPLATES
-        .render("local_app_create.html", &context)
+        .render("local_apps/create.html", &context)
         .map_err(InternalServerError)?;
     Ok(Html(response).into_response())
 }
@@ -402,7 +402,7 @@ pub async fn get_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
         context.insert("app", &app);
 
         let response = TEMPLATES
-            .render("local_app_read.html", &context)
+            .render("local_apps/read.html", &context)
             .map_err(InternalServerError)?;
         Ok(Html(response).into_response())
     } else {
@@ -444,7 +444,7 @@ pub async fn put_local_app(
 
         context.insert("app", &app);
         let response = TEMPLATES
-            .render("local_app_read.html", &context)
+            .render("local_apps/read.html", &context)
             .map_err(InternalServerError)?;
         Ok(Html(response).into_response())
     } else {
@@ -485,7 +485,7 @@ pub async fn get_icon_form(id: Path<u8>) -> Result<impl IntoResponse> {
         context.insert("app", &app);
 
         let response = TEMPLATES
-            .render("icon_form.html", &context)
+            .render("local_apps/icon_form.html", &context)
             .map_err(InternalServerError)?;
         Ok(Html(response).into_response())
     } else {
