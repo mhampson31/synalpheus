@@ -12,7 +12,7 @@ use sea_orm::{Database, DatabaseConnection, EntityTrait, QueryFilter, sea_query:
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fs;
 use std::sync::{LazyLock, OnceLock};
-use tera::{Context, Tera};
+use tera::Tera;
 use tracing::{Level, event, instrument};
 use tracing_subscriber;
 use url::Url;
@@ -31,6 +31,10 @@ pub static TEMPLATES: LazyLock<Tera> = LazyLock::new(|| {
      *  https://github.com/Keats/tera/issues/719
      */
     let mut tera = Tera::default();
+
+    let config = CONFIG.get().unwrap();
+
+    tera.global_context().insert("title", &config.title);
 
     tera.load_from_glob("templates/**/*.html")
         .expect("Could not load templates");
@@ -286,13 +290,6 @@ fn get_oauth_client()
             StatusCode::INTERNAL_SERVER_ERROR,
         )),
     }
-}
-
-fn get_context() -> Context {
-    let mut context = Context::new();
-    let config = CONFIG.get().unwrap();
-    context.insert("title", &config.title);
-    context
 }
 
 #[derive(Debug, Serialize, Deserialize)]
