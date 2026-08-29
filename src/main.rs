@@ -1,11 +1,6 @@
-use oauth2::{
-    AuthUrl, ClientId, ClientSecret, EndpointNotSet, EndpointSet, RedirectUrl, TokenUrl,
-    basic::BasicClient,
-};
-
 use poem::{
-    Error, FromRequest, IntoResponse, Request, RequestBody, Result, Server,
-    error::InternalServerError, http::StatusCode, listener::TcpListener, session::Session,
+    FromRequest, IntoResponse, Request, RequestBody, Result, Server, error::InternalServerError,
+    http::StatusCode, listener::TcpListener, session::Session,
 };
 
 use sea_orm::{Database, DatabaseConnection, EntityTrait, QueryFilter, sea_query::Condition};
@@ -25,7 +20,6 @@ mod data;
 mod middleware;
 mod routes;
 
-//pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
 pub static TEMPLATES: LazyLock<Tera> = LazyLock::new(|| {
     /* Tera::new(glob) seems to lead to a hang with 100% CPU on Docker.
      *  https://github.com/Keats/tera/issues/719
@@ -270,26 +264,6 @@ async fn main() -> Result<()> {
         .run(app)
         .await
         .map_err(InternalServerError)
-}
-
-fn get_oauth_client()
--> Result<BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet>> {
-    let config = CONFIG.get_or_init(SynalpheusConfig::new);
-    let openid = config.openid.clone().expect("No OpenID config");
-
-    match config.url.join(config.authentik.redirect.as_str()) {
-        Ok(redirect_url) => Ok(
-            BasicClient::new(ClientId::new(config.authentik.client_id.clone()))
-                .set_client_secret(ClientSecret::new(config.authentik.client_secret.clone()))
-                .set_auth_uri(AuthUrl::from_url(openid.authorization_endpoint.clone()))
-                .set_token_uri(TokenUrl::from_url(openid.token_endpoint.clone()))
-                .set_redirect_uri(RedirectUrl::from_url(redirect_url)),
-        ),
-        Err(_) => Err(Error::from_string(
-            "Cannot parse Oath2 URLs",
-            StatusCode::INTERNAL_SERVER_ERROR,
-        )),
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

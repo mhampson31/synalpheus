@@ -1,6 +1,9 @@
 use oauth2::{
-    AuthorizationCode, CsrfToken, EmptyExtraTokenFields, PkceCodeChallenge, Scope,
-    StandardTokenResponse, TokenResponse, basic::BasicTokenType, reqwest::Client as ReqwestClient,
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EmptyExtraTokenFields,
+    EndpointNotSet, EndpointSet, PkceCodeChallenge, RedirectUrl, Scope, StandardTokenResponse,
+    TokenResponse, TokenUrl,
+    basic::{BasicClient, BasicTokenType},
+    reqwest::Client as ReqwestClient,
 };
 use poem::{
     IntoResponse, Response, Result,
@@ -26,7 +29,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use super::{AppCard, AppList, AppResponse, TEMPLATES, User, get_config, get_db, get_oauth_client};
+use super::{AppCard, AppList, AppResponse, CONFIG, TEMPLATES, User, get_config, get_db};
 
 use entity::application as LocalApp;
 
@@ -34,6 +37,26 @@ use entity::application as LocalApp;
 pub struct AuthRequest {
     code: String,
     state: CsrfToken,
+}
+
+fn get_oauth_client()
+-> Result<BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet>> {
+    let config = CONFIG.get().unwrap();
+    let openid = config.openid.clone().expect("No OpenID config");
+
+    match config.url.join(config.authentik.redirect.as_str()) {
+        Ok(redirect_url) => Ok(
+            BasicClient::new(ClientId::new(config.authentik.client_id.clone()))
+                .set_client_secret(ClientSecret::new(config.authentik.client_secret.clone()))
+                .set_auth_uri(AuthUrl::from_url(openid.authorization_endpoint.clone()))
+                .set_token_uri(TokenUrl::from_url(openid.token_endpoint.clone()))
+                .set_redirect_uri(RedirectUrl::from_url(redirect_url)),
+        ),
+        Err(_) => Err(Error::from_string(
+            "Cannot parse Oath2 URLs",
+            StatusCode::INTERNAL_SERVER_ERROR,
+        )),
+    }
 }
 
 #[handler]
