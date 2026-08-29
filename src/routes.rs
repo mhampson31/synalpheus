@@ -16,6 +16,7 @@ use sea_orm::{
     EntityTrait, QueryOrder,
 };
 use serde::Deserialize;
+use tera::Context;
 use tracing::{Level, event, instrument};
 
 use std::{
@@ -25,10 +26,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use super::{
-    AppCard, AppList, AppResponse, TEMPLATES, User, get_config, get_context, get_db,
-    get_oauth_client,
-};
+use super::{AppCard, AppList, AppResponse, TEMPLATES, User, get_config, get_db, get_oauth_client};
 
 use entity::application as LocalApp;
 
@@ -40,7 +38,7 @@ pub struct AuthRequest {
 
 #[handler]
 pub async fn index(session: &Session) -> Result<impl IntoResponse + use<>> {
-    let mut context = get_context();
+    let mut context = Context::new();
     if let Some(user) = session.get::<User>("user") {
         context.insert("user", &user);
 
@@ -122,7 +120,7 @@ async fn get_token(
 pub async fn app_cards(session: &Session) -> Result<impl IntoResponse + use<>> {
     /* Send the user back to login if we can't get the access token. Is 303 the right code? */
 
-    let mut context = get_context();
+    let mut context = Context::new();
 
     if let Ok(token) = get_token(session).await {
         let client = reqwest::Client::new();
@@ -288,7 +286,7 @@ pub async fn logout(session: &Session) -> Redirect {
 pub async fn admin(session: &Session) -> Result<impl IntoResponse + use<>> {
     match session.get::<User>("user") {
         Some(user) => {
-            let mut context = get_context();
+            let mut context = Context::new();
             context.insert("user", &user);
 
             let response = TEMPLATES
@@ -307,7 +305,7 @@ pub async fn admin(session: &Session) -> Result<impl IntoResponse + use<>> {
 pub async fn local_apps() -> Result<impl IntoResponse> {
     let db = get_db();
 
-    let mut context = get_context();
+    let mut context = Context::new();
 
     let apps: Vec<entity::application::Model> = LocalApp::Entity::find()
         .order_by_asc(LocalApp::COLUMN.id)
@@ -318,7 +316,7 @@ pub async fn local_apps() -> Result<impl IntoResponse> {
     context.insert("applications", &apps);
 
     let response = TEMPLATES
-        .render("local_apps.html", &context)
+        .render("local_apps/local_apps.html", &context)
         .map_err(InternalServerError)?;
     Ok(Html(response).into_response())
 }
@@ -361,7 +359,7 @@ pub async fn post_local_app(
 pub async fn get_edit_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
     let db = get_db();
 
-    let mut context = get_context();
+    let mut context = Context::new();
     if let Some(app) = LocalApp::Entity::find_by_id(id.0)
         .one(db)
         .await
@@ -370,7 +368,7 @@ pub async fn get_edit_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
         context.insert("app", &app);
 
         let response = TEMPLATES
-            .render("local_app_update.html", &context)
+            .render("local_apps/update.html", &context)
             .map_err(InternalServerError)?;
         Ok(Html(response).into_response())
     } else {
@@ -380,10 +378,10 @@ pub async fn get_edit_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
 
 #[handler]
 pub async fn get_new_local_app() -> Result<impl IntoResponse> {
-    let mut context = get_context();
+    let mut context = Context::new();
 
     let response = TEMPLATES
-        .render("local_app_create.html", &context)
+        .render("local_apps/create.html", &context)
         .map_err(InternalServerError)?;
     Ok(Html(response).into_response())
 }
@@ -392,7 +390,7 @@ pub async fn get_new_local_app() -> Result<impl IntoResponse> {
 pub async fn get_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
     let db = get_db();
 
-    let mut context = get_context();
+    let mut context = Context::new();
 
     if let Some(app) = LocalApp::Entity::find_by_id(id.0)
         .one(db)
@@ -402,7 +400,7 @@ pub async fn get_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
         context.insert("app", &app);
 
         let response = TEMPLATES
-            .render("local_app_read.html", &context)
+            .render("local_apps/read.html", &context)
             .map_err(InternalServerError)?;
         Ok(Html(response).into_response())
     } else {
@@ -425,7 +423,7 @@ pub async fn put_local_app(
 ) -> Result<impl IntoResponse> {
     let db = get_db();
 
-    let mut context = get_context();
+    let mut context = Context::new();
 
     if let Some(app) = LocalApp::Entity::find_by_id(id.0)
         .one(db)
@@ -444,7 +442,7 @@ pub async fn put_local_app(
 
         context.insert("app", &app);
         let response = TEMPLATES
-            .render("local_app_read.html", &context)
+            .render("local_apps/read.html", &context)
             .map_err(InternalServerError)?;
         Ok(Html(response).into_response())
     } else {
@@ -475,7 +473,7 @@ pub async fn delete_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
 pub async fn get_icon_form(id: Path<u8>) -> Result<impl IntoResponse> {
     let db = get_db();
 
-    let mut context = get_context();
+    let mut context = Context::new();
 
     if let Some(app) = LocalApp::Entity::find_by_id(id.0)
         .one(db)
@@ -485,7 +483,7 @@ pub async fn get_icon_form(id: Path<u8>) -> Result<impl IntoResponse> {
         context.insert("app", &app);
 
         let response = TEMPLATES
-            .render("icon_form.html", &context)
+            .render("local_apps/icon_form.html", &context)
             .map_err(InternalServerError)?;
         Ok(Html(response).into_response())
     } else {

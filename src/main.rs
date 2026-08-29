@@ -12,7 +12,7 @@ use sea_orm::{Database, DatabaseConnection, EntityTrait, QueryFilter, sea_query:
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fs;
 use std::sync::{LazyLock, OnceLock};
-use tera::{Context, Tera};
+use tera::Tera;
 use tracing::{Level, event, instrument};
 use tracing_subscriber;
 use url::Url;
@@ -32,34 +32,12 @@ pub static TEMPLATES: LazyLock<Tera> = LazyLock::new(|| {
      */
     let mut tera = Tera::default();
 
-    tera.add_template_files(vec![
-        ("templates/404.html", Some("404.html")),
-        ("templates/base.html", Some("base.html")),
-        ("templates/index.html", Some("index.html")),
-        ("templates/app_cards.html", Some("app_cards.html")),
-        ("templates/admin.html", Some("admin.html")),
-        (
-            "templates/local_apps/local_apps.html",
-            Some("local_apps.html"),
-        ),
-        (
-            "templates/local_apps/create.html",
-            Some("local_app_create.html"),
-        ),
-        (
-            "templates/local_apps/read.html",
-            Some("local_app_read.html"),
-        ),
-        (
-            "templates/local_apps/update.html",
-            Some("local_app_update.html"),
-        ),
-        (
-            "templates/local_apps/icon_form.html",
-            Some("icon_form.html"),
-        ),
-    ])
-    .expect("Template files could not be loaded");
+    let config = CONFIG.get().unwrap();
+
+    tera.global_context().insert("title", &config.title);
+
+    tera.load_from_glob("templates/**/*.html")
+        .expect("Could not load templates");
 
     tera.autoescape_on(vec![".html", ".sql"]);
     tera
@@ -312,13 +290,6 @@ fn get_oauth_client()
             StatusCode::INTERNAL_SERVER_ERROR,
         )),
     }
-}
-
-fn get_context() -> Context {
-    let mut context = Context::new();
-    let config = CONFIG.get().unwrap();
-    context.insert("title", &config.title);
-    context
 }
 
 #[derive(Debug, Serialize, Deserialize)]
