@@ -4,16 +4,8 @@ use oauth2::{
 };
 
 use poem::{
-    Endpoint, EndpointExt, Error, FromRequest, IntoResponse, Request, RequestBody, Result, Route,
-    Server,
-    endpoint::{StaticFileEndpoint, StaticFilesEndpoint},
-    error::{InternalServerError, NotFoundError},
-    get,
-    http::StatusCode,
-    listener::TcpListener,
-    middleware::{CatchPanic, Csrf, Tracing},
-    session::{CookieConfig, CookieSession, Session},
-    web::Html,
+    Error, FromRequest, IntoResponse, Request, RequestBody, Result, Server,
+    error::InternalServerError, http::StatusCode, listener::TcpListener, session::Session,
 };
 
 use sea_orm::{Database, DatabaseConnection, EntityTrait, QueryFilter, sea_query::Condition};
@@ -28,6 +20,7 @@ use url::Url;
 use entity::application as LocalApp;
 use migration::{Migrator, MigratorTrait};
 
+mod application;
 mod data;
 mod middleware;
 mod routes;
@@ -82,6 +75,55 @@ struct OpenID {
     introspection_endpoint: Url,
     revocation_endpoint: Url,
     device_authorization_endpoint: Url,
+}
+
+impl OpenID {
+    fn fetch(well_known: Url) -> Result<OpenID> {
+        /* Get OpenID endpoints from Authentik.
+        To do this, we'll use a quick blocking task while we make the request to Authentik.
+        This only happens on initial startup, so shouldn't be a big deal. */
+
+        // Todo: better error handling. What if it's not a success response?
+
+        /* This can get flagged as bot activity. Not sure if there's a better way to craft the request,
+        but maybe the user agent can help to craft an exception. */
+
+        event!(
+            Level::INFO,
+            "Getting OpenID config from {}",
+            well_known.as_str()
+        );
+
+        let openid = cfg_select! {
+            /* Dummy OpenID fields for testing */
+            test => OpenID {
+                        issuer: Url::parse("http://localhost").unwrap(),
+                        authorization_endpoint: Url::parse("http://localhost").unwrap(),
+                        token_endpoint: Url::parse("http://localhost").unwrap(),
+                        userinfo_endpoint: Url::parse("http://localhost").unwrap(),
+                        end_session_endpoint: Url::parse("http://localhost").unwrap(),
+                        introspection_endpoint: Url::parse("http://localhost").unwrap(),
+                        revocation_endpoint: Url::parse("http://localhost").unwrap(),
+                        device_authorization_endpoint: Url::parse("http://localhost").unwrap(),
+                    },
+            /* get real values from Authentik */
+            _ => {
+                tokio::task::block_in_place(|| {
+                    reqwest::blocking::Client::builder()
+                        .user_agent("Synalpheus")
+                        .build()
+                        .expect("Could not build client")
+                        .get(well_known)
+                        .send()
+                        .expect("Could not get OpenID config")
+                        .json::<OpenID>()
+                        .expect("Could not parse OpenID response")
+                })
+            }
+        };
+
+        Ok(openid)
+    }
 }
 
 /* This struct is just a collection of default functions for the config file.
@@ -142,7 +184,7 @@ impl SynalpheusConfig {
 
         /* Use the Authentik config from the file to get the OpenID data */
         config.openid = Some(
-            get_openid(config.authentik.well_known())
+            OpenID::fetch(config.authentik.well_known())
                 .expect("Could not get OpenID values from Authentik"),
         );
 
@@ -200,48 +242,6 @@ impl PostgresConfig {
     }
 }
 
-#[cfg(not(test))]
-fn get_openid(well_known: Url) -> Result<OpenID> {
-    /* We'll get our OpenID endpoints from Authentik.
-    To do this, we'll use a quick blocking task while we make the request to Authentik.
-    This only happens on initial startup, so shouldn't be a big deal. */
-
-    // Todo: better error handling. What if it's not a success response?
-
-    /* This can get flagged as bot activity. Not sure if there's a better way to craft the request,
-    but maybe the user agent can help to craft an exception. */
-    let openid = tokio::task::block_in_place(|| {
-        let openid = reqwest::blocking::Client::builder()
-            .user_agent("Synalpheus")
-            .build()
-            .expect("Could not build client")
-            .get(well_known)
-            .send()
-            .expect("Could not get OpenID config")
-            .json::<OpenID>()
-            .expect("Could not parse OpenID response");
-
-        openid
-    });
-    Ok(openid)
-}
-
-#[cfg(test)]
-fn get_openid(_well_known: Url) -> Result<OpenID> {
-    /* Dummy OpenID fields */
-    let openid = OpenID {
-        issuer: Url::parse("http://localhost").unwrap(),
-        authorization_endpoint: Url::parse("http://localhost").unwrap(),
-        token_endpoint: Url::parse("http://localhost").unwrap(),
-        userinfo_endpoint: Url::parse("http://localhost").unwrap(),
-        end_session_endpoint: Url::parse("http://localhost").unwrap(),
-        introspection_endpoint: Url::parse("http://localhost").unwrap(),
-        revocation_endpoint: Url::parse("http://localhost").unwrap(),
-        device_authorization_endpoint: Url::parse("http://localhost").unwrap(),
-    };
-    Ok(openid)
-}
-
 /* This largely holds our Authentik information */
 pub static CONFIG: OnceLock<SynalpheusConfig> = OnceLock::new();
 
@@ -256,88 +256,19 @@ pub fn get_db() -> &'static DatabaseConnection {
     DATABASE.get().expect("Database has not been initialized")
 }
 
-/* This creates our actual application. We call this out into a seperate function so
- * we can build a nearly-identical app for our testing.
- * The main difference will be in the session types, which we do not configure here, since test
- * functions will not use Redis. */
-fn create_app() -> impl Endpoint {
-    let redirect_path = get_config().authentik.redirect.clone();
-    Route::new()
-        // static files
-        .at(
-            "static/css/bulma.min.css",
-            StaticFileEndpoint::new("assets/css/bulma.min.css"),
-        )
-        .at(
-            "static/css/styles.css",
-            StaticFileEndpoint::new("assets/css/styles.css"),
-        )
-        .at(
-            "favicon.svg",
-            StaticFileEndpoint::new("assets/images/favicon/favicon.svg"),
-        )
-        .nest(
-            "media/application-icons",
-            StaticFilesEndpoint::new("media/application-icons").show_files_listing(),
-        )
-        .nest(
-            "static/icons",
-            StaticFilesEndpoint::new("assets/images/icons").show_files_listing(),
-        )
-        // page routes
-        .at("/", get(routes::index))
-        .at("/login", get(routes::login))
-        .at("/logout", get(routes::logout))
-        .at("/admin", get(routes::admin).with(middleware::RequireAdmin))
-        // internal API routes
-        .at(
-            "/local-apps/:id",
-            get(routes::get_local_app)
-                .put(routes::put_local_app)
-                .delete(routes::delete_local_app)
-                .with(middleware::RequireAdmin),
-        )
-        .at(
-            "/local-apps/:1/edit",
-            get(routes::get_edit_local_app).with(middleware::RequireAdmin),
-        )
-        .at(
-            "/local-apps/new",
-            get(routes::get_new_local_app).with(middleware::RequireAdmin),
-        )
-        .at(
-            "/local-apps/icon-form/:1",
-            get(routes::get_icon_form)
-                .post(routes::post_icon_form)
-                .with(middleware::RequireAdmin),
-        )
-        .at(
-            "/local-apps",
-            get(routes::local_apps)
-                .post(routes::post_local_app)
-                .with(middleware::RequireAdmin),
-        )
-        .at("/app-cards", get(routes::app_cards))
-        .at(redirect_path, get(routes::login_authorized))
-        // errors
-        .catch_error(four_oh_four)
-        //middleware
-        .with(Tracing)
-        .with(Csrf::new())
-        .with(CatchPanic::new())
-}
-
 #[tokio::main]
 #[instrument]
 async fn main() -> Result<()> {
-    dotenvy::dotenv().ok();
-
     tracing_subscriber::fmt().init();
 
     event!(Level::INFO, "Starting Synalpheus server");
 
-    CONFIG.set(SynalpheusConfig::new()).unwrap();
-    let config = get_config();
+    CONFIG
+        .set(SynalpheusConfig::new())
+        .expect("Failed to set Synalpheus config");
+
+    /* CONFIG is guaranteed to be Some at this point */
+    let config = CONFIG.get().unwrap();
 
     event!(Level::INFO, "Connecting to database");
     let db = Database::connect(config.postgres.connection_string())
@@ -350,9 +281,7 @@ async fn main() -> Result<()> {
     DATABASE.set(db).unwrap();
 
     event!(Level::INFO, "Creating application");
-    let app = create_app();
-
-    let app = app.with(CookieSession::new(CookieConfig::default()));
+    let app = application::create_app();
 
     // If port is not specified, run on 80.
     // url::Url's port methods will probably return a None in our default cases
@@ -363,16 +292,6 @@ async fn main() -> Result<()> {
         .run(app)
         .await
         .map_err(InternalServerError)
-}
-
-async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {
-    let response = TEMPLATES
-        .render("404.html", &Context::new())
-        .expect("Template failure");
-
-    Html(response)
-        .into_response()
-        .with_status(StatusCode::NOT_FOUND)
 }
 
 fn get_oauth_client()
@@ -442,12 +361,6 @@ struct Pagination {
     start_index: i64,
     end_index: i64,
 }
-
-/* This doesn't currently need to do anything
-   Todo: document why this needs to exist here
-*/
-
-trait Application {}
 
 /* We probably don't need all these fields */
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -609,19 +522,12 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use poem::session::CookieSession;
 
     /* A helper function that mocks a response from Authentik, not a test itself */
     fn load_sample_apps_response() -> Result<AppResponse, serde_json::Error> {
         let test_data = std::fs::read_to_string("test_data/get-applications-response.json")
             .expect("Unable to read test data file");
         serde_json::from_str::<AppResponse>(&test_data)
-    }
-
-    /* A helper function to simplify the boilerplate of spinning up the app */
-    pub fn load_test_app() -> impl Endpoint {
-        let app = create_app();
-        app.with(CookieSession::new(CookieConfig::default().secure(false)))
     }
 
     /* Actual tests begin here */
