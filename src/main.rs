@@ -26,7 +26,7 @@ pub static TEMPLATES: LazyLock<Tera> = LazyLock::new(|| {
      */
     let mut tera = Tera::default();
 
-    let config = CONFIG.get().unwrap();
+    let config = CONFIG.get_or_init(|| SynalpheusConfig::new());
 
     tera.global_context().insert("title", &config.title);
 
@@ -228,7 +228,7 @@ async fn main() -> Result<()> {
         .expect("Failed to set Synalpheus config");
 
     /* CONFIG is guaranteed to be Some at this point */
-    let config = CONFIG.get().unwrap();
+    let config = CONFIG.get().expect("Failed to get Synalpheus config");
 
     event!(Level::INFO, "Connecting to database");
     let db = Database::connect(config.postgres.connection_string())
@@ -383,7 +383,7 @@ impl AppList {
 
     #[instrument(skip_all)]
     fn add_authentik_apps(&mut self, auth_apps: AppResponse) {
-        let config = CONFIG.get().unwrap();
+        let config = CONFIG.get_or_init(|| SynalpheusConfig::new());
         self.apps.append(
             &mut auth_apps
                 .results
@@ -439,13 +439,7 @@ fn deserde_icon_url<'de, D>(de: D) -> Result<String, D::Error>
 where
     D: Deserializer<'de>,
 {
-    /* This will be set when this is called for real, but not in tests.
-     * Not sure this is actually helpful but can't hurt.
-     */
-    let config = cfg_select! {
-        test => CONFIG.get_or_init(SynalpheusConfig::new),
-            _ => CONFIG.get().unwrap()
-    };
+    let config = CONFIG.get_or_init(|| SynalpheusConfig::new());
     let authentik_url = config.authentik.url.clone();
 
     let url = match Option::<String>::deserialize(de)? {

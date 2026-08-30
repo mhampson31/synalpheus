@@ -3,7 +3,7 @@ use poem::{
     session::Session,
 };
 
-use super::User;
+use crate::User;
 
 /* Middleware to require that the user is an admin before accessing a resource */
 pub struct RequireAdmin;
