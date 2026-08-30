@@ -1,7 +1,12 @@
+use entity::application as LocalApp;
+use migration::{Migrator, MigratorTrait};
 use poem::{
     FromRequest, IntoResponse, Request, RequestBody, Result, Server, error::InternalServerError,
     http::StatusCode, listener::TcpListener, session::Session,
 };
+
+#[cfg(not(test))]
+use reqwest::{blocking::Client, redirect::Policy};
 
 use sea_orm::{Database, DatabaseConnection, EntityTrait, QueryFilter, sea_query::Condition};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -11,9 +16,6 @@ use tera::Tera;
 use tracing::{Level, event, instrument};
 use tracing_subscriber;
 use url::Url;
-
-use entity::application as LocalApp;
-use migration::{Migrator, MigratorTrait};
 
 mod application;
 mod data;
@@ -77,8 +79,9 @@ impl OpenID {
             /* get real values from Authentik */
             _ => {
                 tokio::task::block_in_place(|| {
-                    reqwest::blocking::Client::builder()
+                    Client::builder()
                         .user_agent("Synalpheus")
+                        .redirect(Policy::none())
                         .build()
                         .expect("Could not build client")
                         .get(well_known)
