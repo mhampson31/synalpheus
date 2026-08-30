@@ -1,10 +1,13 @@
+use entity::application as LocalApp;
+use migration::{Migrator, MigratorTrait};
 use poem::{
     FromRequest, IntoResponse, Request, RequestBody, Result, Server, error::InternalServerError,
     http::StatusCode, listener::TcpListener, session::Session,
 };
 
-use entity::application as LocalApp;
-use migration::{Migrator, MigratorTrait};
+#[cfg(not(test))]
+use reqwest::{blocking::Client, redirect::Policy};
+
 use sea_orm::{Database, DatabaseConnection, EntityTrait, QueryFilter, sea_query::Condition};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fs;
@@ -76,9 +79,9 @@ impl OpenID {
             /* get real values from Authentik */
             _ => {
                 tokio::task::block_in_place(|| {
-                    reqwest::blocking::Client::builder()
+                    Client::builder()
                         .user_agent("Synalpheus")
-                        .redirect(reqwest::redirect::Policy::none())
+                        .redirect(Policy::none())
                         .build()
                         .expect("Could not build client")
                         .get(well_known)
