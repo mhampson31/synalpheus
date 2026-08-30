@@ -216,10 +216,6 @@ pub static CONFIG: OnceLock<SynalpheusConfig> = OnceLock::new();
 /* Database connection */
 pub static DATABASE: OnceLock<DatabaseConnection> = OnceLock::new();
 
-pub fn get_db() -> &'static DatabaseConnection {
-    DATABASE.get().expect("Database has not been initialized")
-}
-
 #[tokio::main]
 #[instrument]
 async fn main() -> Result<()> {
@@ -405,7 +401,7 @@ impl AppList {
 
     async fn add_local_apps(&mut self, groups: &Vec<String>) -> Result<impl IntoResponse> {
         /* local applications */
-        let db = get_db();
+        let db = DATABASE.get().unwrap();
         self.apps.append(
             &mut LocalApp::Entity::find()
                 .filter(
