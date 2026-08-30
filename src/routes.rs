@@ -64,19 +64,15 @@ pub async fn index(session: &Session) -> Result<impl IntoResponse + use<>> {
     let mut context = Context::new();
     if let Some(user) = session.get::<User>("user") {
         context.insert("user", &user);
-
-        let response = TEMPLATES
-            .render("index.html", &context)
-            .map_err(InternalServerError)?;
-        Ok(Html(response).into_response())
     } else {
         /* If we get here, there's no User in the session */
         session.purge();
-        let response = TEMPLATES
-            .render("index.html", &context)
-            .map_err(InternalServerError)?;
-        Ok(Html(response).into_response())
     }
+
+    let response = TEMPLATES
+        .render("index.html", &context)
+        .map_err(InternalServerError)?;
+    Ok(Html(response).into_response())
 }
 
 #[instrument(skip_all)]
