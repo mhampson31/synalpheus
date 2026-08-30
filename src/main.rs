@@ -213,10 +213,6 @@ impl PostgresConfig {
 /* This largely holds our Authentik information */
 pub static CONFIG: OnceLock<SynalpheusConfig> = OnceLock::new();
 
-pub fn get_config() -> &'static SynalpheusConfig {
-    CONFIG.get_or_init(SynalpheusConfig::new)
-}
-
 /* Database connection */
 pub static DATABASE: OnceLock<DatabaseConnection> = OnceLock::new();
 
@@ -391,7 +387,7 @@ impl AppList {
 
     #[instrument(skip_all)]
     fn add_authentik_apps(&mut self, auth_apps: AppResponse) {
-        let config = get_config();
+        let config = CONFIG.get().unwrap();
         self.apps.append(
             &mut auth_apps
                 .results
@@ -447,7 +443,13 @@ fn deserde_icon_url<'de, D>(de: D) -> Result<String, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let config = get_config();
+    /* This will be set when this is called for real, but not in tests.
+     * Not sure this is actually helpful but can't hurt.
+     */
+    let config = cfg_select! {
+        test => CONFIG.get_or_init(SynalpheusConfig::new),
+            _ => CONFIG.get().unwrap()
+    };
     let authentik_url = config.authentik.url.clone();
 
     let url = match Option::<String>::deserialize(de)? {
@@ -538,7 +540,7 @@ mod tests {
             null_icon: String,
         }
 
-        let config = get_config();
+        let config = CONFIG.get_or_init(SynalpheusConfig::new);
         let control = IconURLTester {
             icon: format!("{}/test.png", config.authentik.url),
             null_icon: "".to_string(),

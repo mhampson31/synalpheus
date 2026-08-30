@@ -29,7 +29,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use super::{AppCard, AppList, AppResponse, CONFIG, TEMPLATES, User, get_config, get_db};
+use super::{AppCard, AppList, AppResponse, CONFIG, DATABASE, TEMPLATES, User};
 
 use entity::application as LocalApp;
 
@@ -154,7 +154,7 @@ pub async fn app_cards(session: &Session) -> Result<impl IntoResponse + use<>> {
         /* This vec will hold our apps, whether from Authentik or the DB */
         let mut applications: AppList = AppList::new();
 
-        let config = get_config();
+        let config = CONFIG.get().unwrap();
 
         let applications_endpoint = config
             .authentik
@@ -251,7 +251,7 @@ pub async fn login_authorized(
     session.remove("pkce");
 
     let client = get_oauth_client()?;
-    let config = get_config();
+    let config = CONFIG.get().unwrap();
 
     let token = client
         .exchange_code(AuthorizationCode::new(code))
@@ -295,7 +295,7 @@ pub async fn login_authorized(
 
 #[handler]
 pub async fn logout(session: &Session) -> Redirect {
-    let config = get_config();
+    let config = CONFIG.get().unwrap();
     let openid = config.openid.clone().expect("No OpenID config found");
     session.purge();
     Redirect::permanent(openid.end_session_endpoint)
@@ -322,7 +322,7 @@ pub async fn admin(session: &Session) -> Result<impl IntoResponse + use<>> {
 
 #[handler]
 pub async fn local_apps() -> Result<impl IntoResponse> {
-    let db = get_db();
+    let db = DATABASE.get().unwrap();
 
     let mut context = Context::new();
 
@@ -362,7 +362,7 @@ pub async fn post_local_app(
         group: Set(group),
         id: NotSet,
     };
-    let db = get_db();
+    let db = DATABASE.get().unwrap();
     match new_app.insert(db).await {
         Ok(_) => Response::builder()
             .status(StatusCode::NO_CONTENT)
@@ -376,7 +376,7 @@ pub async fn post_local_app(
 
 #[handler]
 pub async fn get_edit_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
-    let db = get_db();
+    let db = DATABASE.get().unwrap();
 
     let mut context = Context::new();
     if let Some(app) = LocalApp::Entity::find_by_id(id.0)
@@ -407,7 +407,7 @@ pub async fn get_new_local_app() -> Result<impl IntoResponse> {
 
 #[handler]
 pub async fn get_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
-    let db = get_db();
+    let db = DATABASE.get().unwrap();
 
     let mut context = Context::new();
 
@@ -440,7 +440,7 @@ pub async fn put_local_app(
         ..
     }): Form<AppCard>,
 ) -> Result<impl IntoResponse> {
-    let db = get_db();
+    let db = DATABASE.get().unwrap();
 
     let mut context = Context::new();
 
@@ -471,7 +471,7 @@ pub async fn put_local_app(
 
 #[handler]
 pub async fn delete_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
-    let db = get_db();
+    let db = DATABASE.get().unwrap();
 
     /* delete_by_id returns a struct with a rows_affected count. If that's 0, the app wasn't deleted.
      * If more than 1, something weird happened. */
@@ -490,7 +490,7 @@ pub async fn delete_local_app(id: Path<u8>) -> Result<impl IntoResponse> {
 
 #[handler]
 pub async fn get_icon_form(id: Path<u8>) -> Result<impl IntoResponse> {
-    let db = get_db();
+    let db = DATABASE.get().unwrap();
 
     let mut context = Context::new();
 
@@ -512,7 +512,7 @@ pub async fn get_icon_form(id: Path<u8>) -> Result<impl IntoResponse> {
 
 #[handler]
 pub async fn post_icon_form(id: Path<u8>, mut multipart: Multipart) -> Result<impl IntoResponse> {
-    let db = get_db();
+    let db = DATABASE.get().unwrap();
 
     if let Some(app) = LocalApp::Entity::find_by_id(id.0)
         .one(db)
@@ -600,7 +600,7 @@ mod tests {
     /* We expect the OAuth redirect URL to respond to, but not handle, random get requests. */
     #[tokio::test(flavor = "multi_thread")]
     async fn can_reach_redirect() {
-        let config = get_config();
+        let config = CONFIG.get().unwrap();
         let redirect_path = config.authentik.redirect.clone();
         // send request and check the status code
         let client = TestClient::new(create_app());
