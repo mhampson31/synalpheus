@@ -11,14 +11,15 @@ use poem::{
 
 use tera::Context;
 
-use super::{TEMPLATES, get_config, middleware, routes};
+use crate::{CONFIG, SynalpheusConfig, TEMPLATES, middleware, routes};
 
 /* This creates our actual application. We call this out into a seperate function so
  * we can build a nearly-identical app for our testing.
  * The main difference will be in the session types, which we do not configure here, since test
  * functions will not use Redis. */
 pub fn create_app() -> impl Endpoint {
-    let redirect_path = get_config().authentik.redirect.clone();
+    let config = CONFIG.get_or_init(|| SynalpheusConfig::new());
+    let redirect_path = config.authentik.redirect.clone();
     Route::new()
         // static files
         .at(

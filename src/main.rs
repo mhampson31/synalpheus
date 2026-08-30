@@ -26,7 +26,7 @@ pub static TEMPLATES: LazyLock<Tera> = LazyLock::new(|| {
      */
     let mut tera = Tera::default();
 
-    let config = CONFIG.get().unwrap();
+    let config = CONFIG.get_or_init(|| SynalpheusConfig::new());
 
     tera.global_context().insert("title", &config.title);
 
@@ -60,11 +60,7 @@ impl OpenID {
         /* This can get flagged as bot activity. Not sure if there's a better way to craft the request,
         but maybe the user agent can help to craft an exception. */
 
-        event!(
-            Level::INFO,
-            "Getting OpenID config from {}",
-            well_known.as_str()
-        );
+        event!(Level::INFO, "Getting OpenID config from {}", well_known);
 
         let openid = cfg_select! {
             /* Dummy OpenID fields for testing */
@@ -217,16 +213,8 @@ impl PostgresConfig {
 /* This largely holds our Authentik information */
 pub static CONFIG: OnceLock<SynalpheusConfig> = OnceLock::new();
 
-pub fn get_config() -> &'static SynalpheusConfig {
-    CONFIG.get_or_init(SynalpheusConfig::new)
-}
-
 /* Database connection */
 pub static DATABASE: OnceLock<DatabaseConnection> = OnceLock::new();
-
-pub fn get_db() -> &'static DatabaseConnection {
-    DATABASE.get().expect("Database has not been initialized")
-}
 
 #[tokio::main]
 #[instrument]
@@ -240,7 +228,7 @@ async fn main() -> Result<()> {
         .expect("Failed to set Synalpheus config");
 
     /* CONFIG is guaranteed to be Some at this point */
-    let config = CONFIG.get().unwrap();
+    let config = CONFIG.get().expect("Failed to get Synalpheus config");
 
     event!(Level::INFO, "Connecting to database");
     let db = Database::connect(config.postgres.connection_string())
@@ -395,7 +383,7 @@ impl AppList {
 
     #[instrument(skip_all)]
     fn add_authentik_apps(&mut self, auth_apps: AppResponse) {
-        let config = get_config();
+        let config = CONFIG.get_or_init(|| SynalpheusConfig::new());
         self.apps.append(
             &mut auth_apps
                 .results
@@ -413,7 +401,7 @@ impl AppList {
 
     async fn add_local_apps(&mut self, groups: &Vec<String>) -> Result<impl IntoResponse> {
         /* local applications */
-        let db = get_db();
+        let db = DATABASE.get().unwrap();
         self.apps.append(
             &mut LocalApp::Entity::find()
                 .filter(
@@ -451,7 +439,7 @@ fn deserde_icon_url<'de, D>(de: D) -> Result<String, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let config = get_config();
+    let config = CONFIG.get_or_init(|| SynalpheusConfig::new());
     let authentik_url = config.authentik.url.clone();
 
     let url = match Option::<String>::deserialize(de)? {
@@ -542,7 +530,7 @@ mod tests {
             null_icon: String,
         }
 
-        let config = get_config();
+        let config = CONFIG.get_or_init(SynalpheusConfig::new);
         let control = IconURLTester {
             icon: format!("{}/test.png", config.authentik.url),
             null_icon: "".to_string(),
