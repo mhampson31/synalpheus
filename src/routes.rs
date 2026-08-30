@@ -3,7 +3,7 @@ use oauth2::{
     EndpointNotSet, EndpointSet, PkceCodeChallenge, RedirectUrl, Scope, StandardTokenResponse,
     TokenResponse, TokenUrl,
     basic::{BasicClient, BasicTokenType},
-    reqwest::Client as ReqwestClient,
+    reqwest::{Client as ReqwestClient, redirect::Policy},
 };
 use poem::{
     IntoResponse, Response, Result,
@@ -96,9 +96,14 @@ async fn get_token(
                     event!(Level::TRACE, "Refreshing token");
                     let client = get_oauth_client()?;
 
+                    let rc = ReqwestClient::builder()
+                        .redirect(Policy::none())
+                        .build()
+                        .expect("Could not build client");
+
                     let new_token = client
                         .exchange_refresh_token(refresh_token)
-                        .request_async(&ReqwestClient::new())
+                        .request_async(&rc)
                         .await
                         .map_err(InternalServerError)?;
 
@@ -253,10 +258,15 @@ pub async fn login_authorized(
     let client = get_oauth_client()?;
     let config = CONFIG.get_or_init(|| SynalpheusConfig::new());
 
+    let rc = ReqwestClient::builder()
+        .redirect(Policy::none())
+        .build()
+        .expect("Couldn't build client");
+
     let token = client
         .exchange_code(AuthorizationCode::new(code))
         .set_pkce_verifier(pkce_verifier)
-        .request_async(&ReqwestClient::new())
+        .request_async(&rc)
         .await
         .map_err(InternalServerError)?;
 

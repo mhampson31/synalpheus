@@ -3,6 +3,8 @@ use poem::{
     http::StatusCode, listener::TcpListener, session::Session,
 };
 
+use entity::application as LocalApp;
+use migration::{Migrator, MigratorTrait};
 use sea_orm::{Database, DatabaseConnection, EntityTrait, QueryFilter, sea_query::Condition};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fs;
@@ -11,9 +13,6 @@ use tera::Tera;
 use tracing::{Level, event, instrument};
 use tracing_subscriber;
 use url::Url;
-
-use entity::application as LocalApp;
-use migration::{Migrator, MigratorTrait};
 
 mod application;
 mod data;
@@ -79,6 +78,7 @@ impl OpenID {
                 tokio::task::block_in_place(|| {
                     reqwest::blocking::Client::builder()
                         .user_agent("Synalpheus")
+                        .redirect(reqwest::redirect::Policy::none())
                         .build()
                         .expect("Could not build client")
                         .get(well_known)
