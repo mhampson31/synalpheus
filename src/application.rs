@@ -23,8 +23,8 @@ pub fn create_app() -> impl Endpoint {
     Route::new()
         // static files
         .at(
-            "static/css/bulma.min.css",
-            StaticFileEndpoint::new("assets/css/bulma.min.css"),
+            "static/css/output.css",
+            StaticFileEndpoint::new("assets/css/output.css"),
         )
         .at(
             "static/css/styles.css",
