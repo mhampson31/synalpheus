@@ -1,15 +1,18 @@
-<div id="app-list">
-    <div hx-target="closest section" hx-swap="outerHTML">
-        {% for app in applications %}
-        <section class="section" hx-get="/local-apps/{{app.id}}" hx-trigger="load">
-        </section>
-        {% endfor %}
+<div id="app-list" class="grid grid-cols-3 gap-6 place-items-evenly"
+        hx-target="closest section" hx-swap="outerHTML">
+    {% for app in applications %}
+    <section class="card card-border bg-base-200 border-neutral text-base-content" hx-get="/local-apps/{{app.id}}" hx-trigger="load">
+    </section>
+    {% endfor %}
 
-        <section class="section">
-            <button class="button is-primary" hx-get="/local-apps/new">
-                <span class="icon is-small"><img src="static/icons/new.svg" /></span>
-                <span>Add a New Application</span>
-            </button>
-        </section>
-    </div>
+    <section class="card card-border bg-base-200 border-neutral text-base-content place-self-end">
+        <div class="card-body">
+            <div class="card-actions">
+                <button class="btn bg-accent text-accent-content" hx-get="/local-apps/new" hx-swap="outerHTML">
+                    <img class="block-1/2 fill-accent-content" src="static/icons/new.svg" />
+                    <span>Add a New Application</span>
+                </button>
+            </div>
+        </div>
+    </section>
 </div>

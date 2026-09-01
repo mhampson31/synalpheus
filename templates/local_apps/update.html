@@ -1,45 +1,52 @@
-<section hx-trigger='cancel' class='section editing' hx-get="/local-apps/{{app.id}}">
-    <form class="box" id="update-{{app.id}}">
-        <div class="field">
-            <label class="label">Name</label>
-            <input name='name' class="input" value='{{app.name}}'>
-        </div>
+<section hx-trigger='cancel'  hx-get="/local-apps/{{app.id}}">
+    <div class="card card-border bg-base-200 border-neutral text-base-content px-4">
+        <div class="card-body">
+            <form id="update-{{app.id}}">
+                <fieldset class="fieldset mb-2">
+                    <label class="input">
+                        <span class="label">Name</span>
+                        <input name='name' class="input" value='{{app.name}}'>
+                    </label>
 
-        <div class="field">
-            <label class="label">Slug</label>
-            <input name='slug' class="input" value='{{app.slug}}'>
-        </div>
+                    <label class="input">
+                        <span class="label">Slug</span>
+                        <input name='slug' class="input" value='{{app.slug}}'>
+                    </label>
 
-        <div class="field">
-            <label class="label">Icon</label>
-            <input name='icon' class="input" value='{{app.icon}}' readonly>
-        </div>
+                    <label class="input">
+                        <span class="label">Icon</span>
+                        <input name='icon' class="input" value='{{app.icon}}' readonly>
+                    </label>
 
-        <div class="field">
-            <label class="label">Group</label>
-            <input name='group' class="input" value='{{app.group}}'>
-        </div>
+                    <label class="input">
+                        <span class="label">Group</span>
+                        <input name='group' class="input" value='{{app.group}}'>
+                    </label>
 
-        <div class="field">
-            <label class="label">Description</label>
-            <textarea name='description' class="textarea">{{app.description}}</textarea>
-        </div>
+                    <label>
+                        <span class="label">Description</span>
+                        <textarea name='description' class="textarea">{{app.description}}</textarea>
+                    </label>
 
-        <div class="field">
-            <label class="label">URL</label>
-            <input name='launch_url' class="input" value='{{app.launch_url}}'>
+                    <label class="input">
+                        <span class="label">URL</span>
+                        <input name='launch_url' class="input" value='{{app.launch_url}}'>
+                    </label>
+                </fieldset>
+
+                <div class="card-actions justify-end">
+                    <input name="source" type="hidden" value="Local" />
+                    <button class="btn bg-warning/50 text-warning-content" hx-trigger="click" hx-get="/local-apps/{{app.id}}">
+                        <img class="block-1/2 fill-warning-content" src="/static/icons/cancel.svg" />
+                        <span>Cancel</span>
+                    </button>
+                    <button class="btn bg-primary/50 text-primary-content" hx-trigger="click" hx-put="/local-apps/{{app.id}}"
+                        hx-include="#update-{{app.id}}">
+                        <img class="block-1/2 fill-primary-content"  src="/static/icons/save.svg" />
+                        <span>Save</span>
+                    </button>
+                </div>
+            </form>
         </div>
-        <div>
-            <input name="source" type="hidden" value="Local" />
-            <button class="button is-warning" hx-trigger="click" hx-get="/local-apps/{{app.id}}">
-                <span class="icon is-small"><img src="/static/icons/cancel.svg"></span>
-                <span>Cancel</span>
-            </button>
-            <button class="button is-primary" hx-trigger="click" hx-put="/local-apps/{{app.id}}"
-                hx-include="#update-{{app.id}}">
-                <span class="icon is-small"><img src="/static/icons/save.svg"></span>
-                <span>Save</span>
-            </button>
-        </div>
-    </form>
+    </div>
 </section>

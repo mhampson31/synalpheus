@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Synalpheus{% endblock %}
+{% block title %}{{ title }} Admin{% endblock %}
 
 {% block head %}
 {% endblock %}
 
 {% block content %}
 
-<div class="container px-4">
+<div class="container">
 
     <div id="local-apps" hx-get="/local-apps" hx-trigger="load,newApp from:body">
     </div>
