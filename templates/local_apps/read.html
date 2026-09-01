@@ -1,27 +1,29 @@
 <section id="local-{{app.id}}" class="section" hx-get="/local-apps/{{app.id}}"
     hx-trigger="iconSaved_{{app.id}} from:body">
-    <div class="box">
-        <p>Name: {{app.name}}</p>
-        <p>Slug: {{app.slug}}</p>
-        <p>Icon: {{app.icon}}</p>
-        <p>Group: {{app.group}}</p>
-        <p>Description: {{app.description}}</p>
-        <p>URL: {{app.launch_url}}</p>
-        <div>
-            <button class="button is-primary" hx-get="/local-apps/{{app.id}}/edit" hx-trigger="click" _="on click
-        trigger edit">
-                <span class="icon is-small"><img src="/static/icons/edit.svg"></span>
-                <span>Edit</span>
-            </button>
-            <button class="button is-danger" hx-confirm="Delete this app?" hx-delete="/local-apps/{{app.id}}">
-                <span class="icon is-small"><img src="/static/icons/delete.svg"></span>
-                <span>Delete</span>
-            </button>
-            <button class="button is-info" hx-get="/local-apps/icon-form/{{app.id}}" hx-target="body"
-                hx-swap="beforeend">
-                <span class="icon is-small"><img src="/static/icons/upload.svg"></span>
-                <span>Icon</span>
-            </button>
+    <div class="card card-border bg-base-200 border-neutral text-base-content px-4">
+        <div class="card-body">
+            <p>Name: {{app.name}}</p>
+            <p>Slug: {{app.slug}}</p>
+            <p>Icon: {{app.icon}}</p>
+            <p>Group: {{app.group}}</p>
+            <p>Description: {{app.description}}</p>
+            <p>URL: {{app.launch_url}}</p>
+            <div class="card-actions justify-evenly">
+                <button class="btn bg-primary/50 text-primary-content" hx-get="/local-apps/{{app.id}}/edit" hx-trigger="click" _="on click
+            trigger edit">
+                    <img class="block-1/2 fill-primary-content" src="/static/icons/edit.svg">
+                    <span>Edit</span>
+                </button>
+                <button class="btn bg-warning/50 text-warning-content-content" hx-confirm="Delete this app?" hx-delete="/local-apps/{{app.id}}">
+                    <img class="block-1/2 fill-warning-content" src="/static/icons/delete.svg">
+                    <span>Delete</span>
+                </button>
+                <button class="btn bg-info/50 text-info-content" hx-get="/local-apps/icon-form/{{app.id}}" hx-target="body"
+                    hx-swap="beforeend">
+                    <img class="block-1/2 fill-info-content" src="/static/icons/upload.svg">
+                    <span>Icon</span>
+                </button>
+            </div>
         </div>
     </div>
 </section>

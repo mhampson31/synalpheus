@@ -32,12 +32,12 @@
 
         <div>
             <input name="source" type="hidden" value="Local" />
-            <button class="button is-warning" _="on click send newApp to #local-apps">
+            <button class="btn is-warning" _="on click send newApp to #local-apps">
                 <span class="icon is-small"><img src="/static/icons/cancel.svg" /></span>
                 <span>Cancel</span>
             </button>
 
-            <button class="button is-primary" hx-trigger="click" hx-post="/local-apps" hx-include="closest section">
+            <button class="btn is-primary" hx-trigger="click" hx-post="/local-apps" hx-include="closest section">
                 <span class="icon is-small"><img src="/static/icons/save.svg" /></span>
                 <span>Save</span>
             </button>
