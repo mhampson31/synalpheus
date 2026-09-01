@@ -1,37 +1,29 @@
-<div id="app-list" class="grid is-col-min-14 is-row-gap-3">
+<div id="app-list" class="grid grid-cols-3 gap-6 place-items-evenly">
     {% if applications %}
     {% for app in applications %}
-    <div class="cell">
+    <div class="card card-border bg-base-100 border-base-300 text-base-content shadow-sm">
 
         {% if app.launch_url %}
         <a href="{{ app.launch_url }}">
             {% endif %}
-            <div class="card">
+                <div class="card-title">
+                    <figure class="">
+                        <img class="max-block-16" {% if app.icon %} src="{{app.icon}}" {% else %} src="/static/icons/shrimp.svg" {%
+                            endif %} alt="The {{app.name}} icon">
+                    </figure>
+                    <h2>{{ app.name }}</h2>
+                </div>
 
-                <header class="card-header">
-                    <div class="card-header-title">
-                        <div class="media">
-
-                            <figure class="media-left image is-64x64">
-                                <img {% if app.icon %} src="{{app.icon}}" {% else %} src="/static/icons/shrimp.svg" {%
-                                    endif %} alt="The {{app.name}} icon">
-                            </figure>
-
-                            <div class="media-content">
-                                <p class="is-size-4">{{ app.name }}</p>
-                                {% if app.group %}
-                                <p class="is-size-6">{{ app.group }}</p>
-                                {% endif %}
-                            </div>
-
-                        </div>
+                <div class="card-body">
+                    {% if app.group %}
+                    <div class="card-actions">
+                        <h5>{{ app.group }}</h5>
                     </div>
-                </header>
-
-                <div class="card-content pt-0">
+                    {% endif %}
                     <p class="card-text">{{app.description}}</p>
                 </div>
-            </div>
+
+
             {% if app.launch_url %}
         </a>
         {% endif %}
