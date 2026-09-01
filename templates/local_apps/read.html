@@ -8,7 +8,7 @@
             <p>Group: {{app.group}}</p>
             <p>Description: {{app.description}}</p>
             <p>URL: {{app.launch_url}}</p>
-            <div class="card-actions justify-evenly">
+            <div class="card-actions justify-end">
                 <button class="btn bg-primary/50 text-primary-content" hx-get="/local-apps/{{app.id}}/edit" hx-trigger="click" _="on click
             trigger edit">
                     <img class="block-1/2 fill-primary-content" src="/static/icons/edit.svg">

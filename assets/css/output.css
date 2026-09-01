@@ -1742,8 +1742,8 @@
   .grid-cols-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  .justify-evenly {
-    justify-content: space-evenly;
+  .justify-end {
+    justify-content: flex-end;
   }
   .gap-6 {
     gap: calc(var(--spacing) * 6);
