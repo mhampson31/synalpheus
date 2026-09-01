@@ -1748,6 +1748,9 @@
   .gap-6 {
     gap: calc(var(--spacing) * 6);
   }
+  .place-self-end {
+    place-self: end;
+  }
   .rounded-box {
     border-radius: var(--radius-box);
   }

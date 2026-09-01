@@ -1,7 +1,7 @@
-<section hx-trigger='cancel' class='section editing' hx-get="/local-apps/{{app.id}}">
-    <la class="card card-border bg-base-200 border-neutral text-base-content px-4">
-        <lab class="card-body">
-            <form class="" id="update-{{app.id}}">
+<section hx-trigger='cancel'  hx-get="/local-apps/{{app.id}}">
+    <div class="card card-border bg-base-200 border-neutral text-base-content px-4">
+        <div class="card-body">
+            <form id="update-{{app.id}}">
                 <fieldset class="fieldset mb-2">
                     <label class="input">
                         <span class="label">Name</span>
@@ -23,16 +23,15 @@
                         <input name='group' class="input" value='{{app.group}}'>
                     </label>
 
-                    <label class="input">
-                        <span class="label">URL</span>
-                        <input name='launch_url' class="input" value='{{app.launch_url}}'>
-                    </label>
-
                     <label>
                         <span class="label">Description</span>
                         <textarea name='description' class="textarea">{{app.description}}</textarea>
                     </label>
 
+                    <label class="input">
+                        <span class="label">URL</span>
+                        <input name='launch_url' class="input" value='{{app.launch_url}}'>
+                    </label>
                 </fieldset>
 
                 <div class="card-actions justify-evenly">
