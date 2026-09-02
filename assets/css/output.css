@@ -1985,6 +1985,68 @@
     --depth: 1;
     --noise: 0;
   }
+  :root:has(input.theme-controller[value=retro]:checked),[data-theme=retro] {
+    color-scheme: light;
+    --color-base-100: oklch(91.637% 0.034 90.515);
+    --color-base-200: oklch(88.272% 0.049 91.774);
+    --color-base-300: oklch(84.133% 0.065 90.856);
+    --color-base-content: oklch(41% 0.112 45.904);
+    --color-primary: oklch(80% 0.114 19.571);
+    --color-primary-content: oklch(39% 0.141 25.723);
+    --color-secondary: oklch(92% 0.084 155.995);
+    --color-secondary-content: oklch(44% 0.119 151.328);
+    --color-accent: oklch(68% 0.162 75.834);
+    --color-accent-content: oklch(41% 0.112 45.904);
+    --color-neutral: oklch(44% 0.011 73.639);
+    --color-neutral-content: oklch(86% 0.005 56.366);
+    --color-info: oklch(58% 0.158 241.966);
+    --color-info-content: oklch(96% 0.059 95.617);
+    --color-success: oklch(51% 0.096 186.391);
+    --color-success-content: oklch(96% 0.059 95.617);
+    --color-warning: oklch(64% 0.222 41.116);
+    --color-warning-content: oklch(96% 0.059 95.617);
+    --color-error: oklch(70% 0.191 22.216);
+    --color-error-content: oklch(40% 0.123 38.172);
+    --radius-selector: 0.25rem;
+    --radius-field: 0.25rem;
+    --radius-box: 0.5rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1px;
+    --depth: 0;
+    --noise: 0;
+  }
+  :root:has(input.theme-controller[value=lemonade]:checked),[data-theme=lemonade] {
+    color-scheme: light;
+    --color-base-100: oklch(98.71% 0.02 123.72);
+    --color-base-200: oklch(91.8% 0.018 123.72);
+    --color-base-300: oklch(84.89% 0.017 123.72);
+    --color-base-content: oklch(19.742% 0.004 123.72);
+    --color-primary: oklch(58.92% 0.199 134.6);
+    --color-primary-content: oklch(11.784% 0.039 134.6);
+    --color-secondary: oklch(77.75% 0.196 111.09);
+    --color-secondary-content: oklch(15.55% 0.039 111.09);
+    --color-accent: oklch(85.39% 0.201 100.73);
+    --color-accent-content: oklch(17.078% 0.04 100.73);
+    --color-neutral: oklch(30.98% 0.075 108.6);
+    --color-neutral-content: oklch(86.196% 0.015 108.6);
+    --color-info: oklch(86.19% 0.047 224.14);
+    --color-info-content: oklch(17.238% 0.009 224.14);
+    --color-success: oklch(86.19% 0.047 157.85);
+    --color-success-content: oklch(17.238% 0.009 157.85);
+    --color-warning: oklch(86.19% 0.047 102.15);
+    --color-warning-content: oklch(17.238% 0.009 102.15);
+    --color-error: oklch(86.19% 0.047 25.85);
+    --color-error-content: oklch(17.238% 0.009 25.85);
+    --radius-selector: 1rem;
+    --radius-field: 0.5rem;
+    --radius-box: 1rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1px;
+    --depth: 0;
+    --noise: 0;
+  }
   :root {
     --page-has-backdrop: var(--page-scroll-lock) 1;
     --page-scroll-bg: var(--page-scroll-lock)
