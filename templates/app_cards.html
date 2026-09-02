@@ -5,26 +5,26 @@
 
         {% if app.launch_url %}
         <a href="{{ app.launch_url }}">
-            {% endif %}
-                <div class="card-title bg-base-100 p-2 rounded-box">
-                    <figure class="rounded-box">
-                        <img class="max-block-16" {% if app.icon %} src="{{app.icon}}" {% else %} src="/static/icons/shrimp.svg" {%
-                            endif %} alt="The {{app.name}} icon">
-                    </figure>
-                    <h2>{{ app.name }}</h2>
+        {% endif %}
+
+            <div class="card-title bg-base-100 p-2 rounded-box">
+                <figure class="rounded-box">
+                    <img class="size-16" {% if app.icon %} src="{{app.icon}}" {% else %} src="/static/icons/shrimp.svg" {%
+                        endif %} alt="The {{app.name}} icon">
+                </figure>
+                <h2>{{ app.name }}</h2>
+            </div>
+
+            <div class="card-body p-2">
+                {% if app.group %}
+                <div class="card-actions items-end">
+                    <p class="italic">{{ app.group }}</p>
                 </div>
+                {% endif %}
+                <p class="card-text">{{app.description}}</p>
+            </div>
 
-                <div class="card-body p-2">
-                    {% if app.group %}
-                    <div class="card-actions">
-                        <h5>{{ app.group }}</h5>
-                    </div>
-                    {% endif %}
-                    <p class="card-text">{{app.description}}</p>
-                </div>
-
-
-            {% if app.launch_url %}
+        {% if app.launch_url %}
         </a>
         {% endif %}
     </div>
