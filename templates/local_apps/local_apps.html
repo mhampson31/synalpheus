@@ -1,11 +1,11 @@
-<div id="app-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 place-items-evenly"
+<div id="app-list" class="grid place-items-evenly"
         hx-target="closest section" hx-swap="outerHTML">
     {% for app in applications %}
     <section class="card card-border bg-base-200 border-neutral text-base-content" hx-get="/local-apps/{{app.id}}" hx-trigger="load">
     </section>
     {% endfor %}
 
-    <section class="card card-border bg-base-200 border-neutral text-base-content place-self-end">
+    <section class="card place-self-end">
         <div class="card-body">
             <div class="card-actions">
                 <button class="btn bg-accent text-accent-content" hx-get="/local-apps/new" hx-swap="outerHTML">

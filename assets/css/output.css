@@ -1405,14 +1405,8 @@
   .transform {
     transform: var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);
   }
-  .grid-cols-1 {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
   .justify-end {
     justify-content: flex-end;
-  }
-  .gap-6 {
-    gap: calc(var(--spacing) * 6);
   }
   .place-self-end {
     place-self: end;
@@ -1533,15 +1527,23 @@
   .max-block-16 {
     max-block-size: calc(var(--spacing) * 16);
   }
+}
+.card {
+  border-color: var(--color-neutral);
+  background-color: var(--color-base-200);
+  color: var(--color-base-content);
+  @layer daisyui.l1.l2 {
+    border: var(--border) solid var(--color-base-200);
+  }
+}
+.grid {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: calc(var(--spacing) * 6);
   @media (width >= 48rem) {
-    .md\:grid-cols-2 {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   @media (width >= 80rem) {
-    .xl\:grid-cols-3 {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 @layer base {
