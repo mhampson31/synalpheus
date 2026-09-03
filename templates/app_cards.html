@@ -1,28 +1,30 @@
 <div id="app-list" class="grid place-items-evenly">
     {% if applications %}
     {% for app in applications %}
-    <div class="card">
+
+    <div class="card p-2">
 
         {% if app.launch_url %}
         <a href="{{ app.launch_url }}">
         {% endif %}
 
-            <div class="card-title bg-base-100 p-2 rounded-t-lg">
-                <figure class="rounded-box">
-                    <img class="size-16" {% if app.icon %} src="{{app.icon}}" {% else %} src="/static/icons/shrimp.svg" {%
-                        endif %} alt="The {{app.name}} icon">
-                </figure>
-                <h2>{{ app.name }}</h2>
-            </div>
+        <div class="card-title">
+            <img class="size-16 rounded-box"
+                    {% if app.icon %} src="{{app.icon}}"
+                    {% else %} src="/static/icons/shrimp.svg"
+                    {% endif %} alt="The {{app.name}} icon" />
 
-            <div class="card-body p-2">
-                {% if app.group %}
-                <div class="card-actions items-end">
-                    <p class="italic">{{ app.group }}</p>
-                </div>
-                {% endif %}
-                <p class="card-text">{{app.description}}</p>
+            <h2 >{{ app.name }}</h2>
+        </div>
+
+        <div class="card-body p-2">
+            {% if app.group %}
+            <div class="card-actions items-end">
+                <p class="italic">{{ app.group }}</p>
             </div>
+            {% endif %}
+            <p class="card-text">{{app.description}}</p>
+        </div>
 
         {% if app.launch_url %}
         </a>

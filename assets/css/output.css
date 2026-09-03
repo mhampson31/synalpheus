@@ -11,7 +11,6 @@
     --spacing: 0.25rem;
     --text-xl: 1.25rem;
     --text-xl--line-height: calc(1.75 / 1.25);
-    --radius-lg: 0.5rem;
     --drop-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.15);
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
@@ -1710,9 +1709,9 @@
   .rounded-box {
     border-radius: var(--radius-box);
   }
-  .rounded-t-lg {
-    border-top-left-radius: var(--radius-lg);
-    border-top-right-radius: var(--radius-lg);
+  .rounded-t-box {
+    border-top-left-radius: var(--radius-box);
+    border-top-right-radius: var(--radius-box);
   }
   .border-neutral {
     border-color: var(--color-neutral);
@@ -1720,17 +1719,8 @@
   .bg-accent {
     background-color: var(--color-accent);
   }
-  .bg-base-100 {
-    background-color: var(--color-base-100);
-  }
   .bg-base-200 {
     background-color: var(--color-base-200);
-  }
-  .bg-base-300 {
-    background-color: var(--color-base-300);
-  }
-  .bg-info-content {
-    background-color: var(--color-info-content);
   }
   .bg-info\/50 {
     background-color: var(--color-info);
@@ -1791,11 +1781,11 @@
   .text-base-content {
     color: var(--color-base-content);
   }
-  .text-info {
-    color: var(--color-info);
-  }
   .text-info-content {
     color: var(--color-info-content);
+  }
+  .text-primary {
+    color: var(--color-primary);
   }
   .text-primary-content {
     color: var(--color-primary-content);
@@ -1848,7 +1838,7 @@
 }
 .card {
   min-height: calc(var(--spacing) * 40);
-  background-color: var(--color-base-200);
+  background-color: var(--color-base-100);
   color: var(--color-base-content);
   --tw-drop-shadow-size: drop-shadow(0 1px 2px var(--tw-drop-shadow-color, rgb(0 0 0 / 0.15)));
   --tw-drop-shadow: drop-shadow(var(--drop-shadow-sm));
