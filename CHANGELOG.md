@@ -5,15 +5,19 @@ What's new in Synalpheus?
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). (Or tries to anyway.)
 
-## [0.9.0] - 2026-9-01
+## [0.10.0] - 2026-09-03
+- New theming, including a theme selector
+- Better responsive design
+
+## [0.9.0] - 2026-09-01
 - Changed CSS framework from Bulma to daisyUI/Tailwind
 
-## [0.8.0] - 2026-8-30
+## [0.8.0] - 2026-08-30
 - *Important!* Synalpheus now uses a _config.toml_ file instead of _.env_. Please see the new sample file.
 - Authentik's "Hide from Application Dashboard" setting is now observed  
 - Lots of refactoring and code cleanup
 
-## [0.7.0] - 2026-8-23
+## [0.7.0] - 2026-08-23
 - Removed Redis as the session storage, since Authentik no longer uses it
 - Updated Tera and SeaORM to their v2 releases
 - Other smaller version bumps
