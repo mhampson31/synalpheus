@@ -443,10 +443,15 @@ where
     D: Deserializer<'de>,
 {
     let config = CONFIG.get_or_init(|| SynalpheusConfig::new());
-    let authentik_url = config.authentik.url.clone();
 
     let url = match Option::<String>::deserialize(de)? {
-        Some(key) => format!("{authentik_url}{key}"),
+        Some(key) => {
+            let authentik_url = config.authentik.url.clone();
+            authentik_url
+                .join(&key)
+                .expect("Could not build icon URLS")
+                .to_string()
+        }
         None => String::default(),
     };
 
@@ -534,8 +539,9 @@ mod tests {
         }
 
         let config = CONFIG.get_or_init(SynalpheusConfig::new);
+        let url = config.authentik.url.join("test.png").unwrap();
         let control = IconURLTester {
-            icon: format!("{}/test.png", config.authentik.url),
+            icon: url.to_string(),
             null_icon: "".to_string(),
         };
 
