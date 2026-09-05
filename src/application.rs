@@ -23,16 +23,20 @@ pub fn create_app() -> impl Endpoint {
     Route::new()
         // static files
         .at(
-            "static/scripts/htmx.min.js",
-            StaticFileEndpoint::new("assets/scripts/htmx.min.js"),
-        )
-        .at(
             "static/css/output.css",
             StaticFileEndpoint::new("assets/css/output.css"),
         )
         .at(
             "static/css/styles.css",
             StaticFileEndpoint::new("assets/css/styles.css"),
+        )
+        .at(
+            "static/js/htmx.min.js",
+            StaticFileEndpoint::new("assets/js/htmx.min.js"),
+        )
+        .at(
+            "static/js/hyperscript.js",
+            StaticFileEndpoint::new("assets/js/hyperscript.js"),
         )
         .at(
             "favicon.svg",

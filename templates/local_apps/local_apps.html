@@ -1,5 +1,5 @@
 <div id="app-list" class="grid place-items-evenly"
-        hx-target="closest section" hx-swap="outerHTML">
+        hx-target:inherited="closest section" hx-swap:inherited="outerHTML">
     {% for app in applications %}
     <section class="card card-border bg-base-200 border-neutral text-base-content" hx-get="/local-apps/{{app.id}}" hx-trigger="load">
     </section>
