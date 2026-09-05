@@ -4,7 +4,7 @@ use poem::{
     error::NotFoundError,
     get,
     http::StatusCode,
-    middleware::{CatchPanic, Csrf, Tracing},
+    middleware::{CatchPanic, Compression, Csrf, Tracing},
     session::{CookieConfig, CookieSession},
     web::Html,
 };
@@ -81,6 +81,7 @@ pub fn create_app() -> impl Endpoint {
         .catch_error(four_oh_four)
         //middleware
         .with(Tracing)
+        .with(Compression::new())
         .with(Csrf::new())
         .with(CatchPanic::new())
         .with(CookieSession::new(CookieConfig::default()))
