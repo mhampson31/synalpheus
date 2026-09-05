@@ -317,6 +317,7 @@ pub async fn admin(session: &Session) -> Result<impl IntoResponse + use<>> {
         Some(user) => {
             let mut context = Context::new();
             context.insert("user", &user);
+            context.insert("version", env!("CARGO_PKG_VERSION"));
 
             let response = TEMPLATES
                 .render("admin.html", &context)
