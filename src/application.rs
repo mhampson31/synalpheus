@@ -1,13 +1,17 @@
+use std::time::Duration;
+
 use poem::{
     Endpoint, EndpointExt, IntoResponse, Route,
     endpoint::{StaticFileEndpoint, StaticFilesEndpoint},
     error::NotFoundError,
     get,
     http::StatusCode,
-    middleware::{CatchPanic, Compression, Csrf, Tracing},
+    middleware::{CatchPanic, Compression, Csrf, TowerLayerCompatExt, Tracing},
     session::{CookieConfig, CookieSession},
     web::Html,
 };
+
+use tower_http_cache::{CacheLayerBuilder, backend::memory::InMemoryBackend, layer::CacheService};
 
 use tera::Context;
 
@@ -20,6 +24,13 @@ use crate::{CONFIG, SynalpheusConfig, TEMPLATES, middleware, routes};
 pub fn create_app() -> impl Endpoint {
     let config = CONFIG.get_or_init(|| SynalpheusConfig::new());
     let redirect_path = config.authentik.redirect.clone();
+
+    let cache = CacheLayerBuilder::new(InMemoryBackend::new(10_000))
+        .ttl(Duration::from_hours(24))
+        .build();
+
+    let c = CacheService::from(cache);
+
     Route::new()
         // static files
         .at(
@@ -85,6 +96,7 @@ pub fn create_app() -> impl Endpoint {
         .with(Csrf::new())
         .with(CatchPanic::new())
         .with(CookieSession::new(CookieConfig::default()))
+    //.with(cache)
 }
 
 async fn four_oh_four(_: NotFoundError) -> impl IntoResponse {

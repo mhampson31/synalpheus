@@ -19,6 +19,7 @@ poem = { version = "3.1", features = [
     "multipart",
     "test",
     "static-files",
+    "tower-compat"
 ] }
 reqwest = { version = "0.13", features = ["json", "blocking"] }
 sea-orm = { version = "2.0", features = [
@@ -35,3 +36,4 @@ tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2.5"
 toml = "1.1.4"
+tower-http-cache = { version = "0.6.1", features = ["compression", "tracing"] }
