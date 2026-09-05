@@ -39,6 +39,10 @@ pub fn create_app() -> impl Endpoint {
             StaticFileEndpoint::new("assets/js/hyperscript.js"),
         )
         .at(
+            "static/js/theme-change.js",
+            StaticFileEndpoint::new("assets/js/theme-change.js"),
+        )
+        .at(
             "favicon.svg",
             StaticFileEndpoint::new("assets/images/favicon/favicon.svg"),
         )
