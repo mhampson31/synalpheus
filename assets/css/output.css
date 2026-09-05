@@ -1885,6 +1885,21 @@
     margin-bottom: calc(var(--spacing) * 4);
   }
   @layer daisyui.l1.l2.l3 {
+    .footer {
+      display: grid;
+      width: 100%;
+      grid-auto-flow: row;
+      place-items: start;
+      column-gap: calc(0.25rem * 4);
+      row-gap: calc(0.25rem * 10);
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+    .footer > :not(script, style, template) {
+      display: grid;
+      place-items: start;
+      gap: calc(0.25rem * 2);
+    }
     .navbar-end {
       display: inline-flex;
       align-items: center;
@@ -1962,8 +1977,11 @@
   .h-5 {
     height: calc(var(--spacing) * 5);
   }
-  .h-screen {
-    height: 100vh;
+  .h-dvh {
+    height: 100dvh;
+  }
+  .min-h-dvh {
+    min-height: 100dvh;
   }
   .w-5 {
     width: calc(var(--spacing) * 5);
@@ -1982,6 +2000,12 @@
   }
   .transform {
     transform: var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);
+  }
+  .grid-flow-col {
+    grid-auto-flow: column;
+  }
+  .items-center {
+    align-items: center;
   }
   .items-end {
     align-items: flex-end;
@@ -2025,6 +2049,9 @@
   }
   .bg-accent {
     background-color: var(--color-accent);
+  }
+  .bg-base-100 {
+    background-color: var(--color-base-100);
   }
   .bg-base-200 {
     background-color: var(--color-base-200);
@@ -2071,6 +2098,9 @@
   }
   .p-2 {
     padding: calc(var(--spacing) * 2);
+  }
+  .p-10 {
+    padding: calc(var(--spacing) * 10);
   }
   .px-1 {
     padding-inline: var(--spacing);
@@ -2143,6 +2173,16 @@
   @media (width < 48rem) {
     .max-md\:hidden {
       display: none;
+    }
+  }
+  @media (width >= 40rem) {
+    @layer daisyui.l1.l2 {
+      .sm\:footer-horizontal {
+        grid-auto-flow: column;
+      }
+      .sm\:footer-horizontal.footer-center {
+        grid-auto-flow: row dense;
+      }
     }
   }
   @media (width >= 48rem) {
