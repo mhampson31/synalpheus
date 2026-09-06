@@ -1,18 +1,22 @@
 <div id="app-list" class="grid place-items-evenly"
-        hx-target:inherited="closest section" hx-swap:inherited="outerHTML">
+        hx-target:inherited="closest section"
+        hx-swap:inherited="outerHTML">
     {% for app in applications %}
-    <section class="card card-border bg-base-200 border-neutral text-base-content" hx-get="/local-apps/{{app.id}}" hx-trigger="load">
+    <section class="card card-border bg-base-200 border-neutral text-base-content"
+        hx-get="/local-apps/{{app.id}}"
+        hx-trigger="load">
     </section>
     {% endfor %}
 
-    <section class="card place-self-end">
-        <div class="card-body">
-            <div class="card-actions">
-                <button class="btn bg-accent text-accent-content" hx-get="/local-apps/new" hx-swap="outerHTML">
-                    <img class="block-1/2 fill-accent-content" src="static/icons/new.svg" />
-                    <span>Add a New Application</span>
-                </button>
-            </div>
-        </div>
+    <section class="self-end card-body">
+        <button class="btn bg-accent text-accent-content w-24"
+            aria-label="Add a new application"
+            title="Add New Application"
+            hx-get="/local-apps/new"
+            hx-swap="outerHTML">
+            {{ <new_icon /> }}
+            <span>New</span>
+        </button>
     </section>
+
 </div>

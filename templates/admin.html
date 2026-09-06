@@ -7,22 +7,16 @@
 
 {% block content %}
 
-<div class="container">
-
     <div id="local-apps" hx-get="/local-apps" hx-trigger="load,newApp from:body">
     </div>
-
-</div>
 
 {% endblock %}
 
 {% block footer %}
-<footer class="footer sm:footer-horizontal p-10 bg-base-100 text-primary place-content-end">
 
-        <div class="join">
-            <button class="btn join-item"><a target="_blank" href="https://github.com/mhampson31/synalpheus/releases/tag/v{{ version }}">Synalpheus v{{ version }}</a></button>
-            <button class="btn join-item"><a target="_blank" href="https://github.com/mhampson31/synalpheus">Source</a></button>
-        </div>
+    <div class="join">
+        <button class="btn join-item"><a target="_blank" href="https://github.com/mhampson31/synalpheus/releases/tag/v{{ version }}">Synalpheus v{{ version }}</a></button>
+        <button class="btn join-item"><a target="_blank" href="https://github.com/mhampson31/synalpheus">Source</a></button>
+    </div>
 
-</footer>
 {% endblock %}
