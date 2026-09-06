@@ -1761,6 +1761,44 @@
       cursor: not-allowed;
     }
   }
+  .join {
+    display: inline-flex;
+    align-items: stretch;
+    --join-ss: 0;
+    --join-se: 0;
+    --join-es: 0;
+    --join-ee: 0;
+    --join-v: 0;
+    --join-h: 1;
+    @scope (&) {
+       > :where(:focus, :has(:focus)) {
+        z-index: 2;
+      }
+      @media (hover: hover) {
+         > :where(.btn:hover, :has(.btn:hover)) {
+          z-index: 1;
+        }
+      }
+      :where(:scope > :first-child) {
+        --join-ss: var(--radius-field);
+        --join-se: calc(var(--radius-field) * var(--join-v));
+        --join-es: calc(var(--radius-field) * var(--join-h));
+        --join-ee: 0;
+      }
+      :where(:scope > :last-child) {
+        --join-ss: 0;
+        --join-se: calc(var(--radius-field) * var(--join-h));
+        --join-es: calc(var(--radius-field) * var(--join-v));
+        --join-ee: var(--radius-field);
+      }
+      :where(:scope > :only-child) {
+        --join-ss: var(--radius-field);
+        --join-se: var(--radius-field);
+        --join-es: var(--radius-field);
+        --join-ee: var(--radius-field);
+      }
+    }
+  }
   .container {
     width: 100%;
     @media (width >= 40rem) {
@@ -1870,6 +1908,33 @@
         border-inline-start: var(--border) solid color-mix(in oklab, currentColor 10%, #0000);
       }
     }
+  }
+  .join-item {
+    @layer daisyui.l1.l2.l3.l4 {
+       > * {
+        --join-ss: initial;
+        --join-se: initial;
+        --join-es: initial;
+        --join-ee: initial;
+      }
+    }
+    border-style: solid;
+    border-width: var(--border, 1px);
+    border-start-start-radius: var(--join-ss);
+    border-start-end-radius: var(--join-se);
+    border-end-start-radius: var(--join-es);
+    border-end-end-radius: var(--join-ee);
+    &:not(:first-child, :disabled, [disabled], .btn-disabled) {
+      margin-inline-start: calc(var(--border, 1px) * -1 * var(--join-h));
+      margin-block-start: calc(var(--border, 1px) * -1 * var(--join-v));
+    }
+    &:is(:disabled, [disabled], .btn-disabled) {
+      border-width: var(--border, 1px);
+      border-inline-end-width: calc(var(--border, 1px) * var(--join-v));
+      border-block-end-width: calc(var(--border, 1px) * var(--join-h));
+    }
+  }
+  @layer daisyui.l1.l2.l3 {
     .menu .dropdown-content {
       margin-top: calc(0.25rem * 2);
       padding: calc(0.25rem * 2);
@@ -1885,6 +1950,21 @@
     margin-bottom: calc(var(--spacing) * 4);
   }
   @layer daisyui.l1.l2.l3 {
+    .footer {
+      display: grid;
+      width: 100%;
+      grid-auto-flow: row;
+      place-items: start;
+      column-gap: calc(0.25rem * 4);
+      row-gap: calc(0.25rem * 10);
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+    .footer > :not(script, style, template) {
+      display: grid;
+      place-items: start;
+      gap: calc(0.25rem * 2);
+    }
     .navbar-end {
       display: inline-flex;
       align-items: center;
@@ -1962,8 +2042,11 @@
   .h-5 {
     height: calc(var(--spacing) * 5);
   }
-  .h-screen {
-    height: 100vh;
+  .h-dvh {
+    height: 100dvh;
+  }
+  .min-h-dvh {
+    min-height: 100dvh;
   }
   .w-5 {
     width: calc(var(--spacing) * 5);
@@ -1974,6 +2057,9 @@
   .flex-none {
     flex: none;
   }
+  .grow {
+    flex-grow: 1;
+  }
   @layer daisyui.l1.l2.l3 {
     .menu .dropdown:focus-within .menu-dropdown-toggle:after {
       rotate: 45deg;
@@ -1982,6 +2068,9 @@
   }
   .transform {
     transform: var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);
+  }
+  .place-content-end {
+    place-content: end;
   }
   .items-end {
     align-items: flex-end;
@@ -2025,6 +2114,9 @@
   }
   .bg-accent {
     background-color: var(--color-accent);
+  }
+  .bg-base-100 {
+    background-color: var(--color-base-100);
   }
   .bg-base-200 {
     background-color: var(--color-base-200);
@@ -2071,6 +2163,9 @@
   }
   .p-2 {
     padding: calc(var(--spacing) * 2);
+  }
+  .p-10 {
+    padding: calc(var(--spacing) * 10);
   }
   .px-1 {
     padding-inline: var(--spacing);
@@ -2143,6 +2238,16 @@
   @media (width < 48rem) {
     .max-md\:hidden {
       display: none;
+    }
+  }
+  @media (width >= 40rem) {
+    @layer daisyui.l1.l2 {
+      .sm\:footer-horizontal {
+        grid-auto-flow: column;
+      }
+      .sm\:footer-horizontal.footer-center {
+        grid-auto-flow: row dense;
+      }
     }
   }
   @media (width >= 48rem) {

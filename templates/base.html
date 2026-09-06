@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="h-dvh bg-base-200 text-base-content">
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -16,7 +16,7 @@
         {% block head %}{% endblock %}
     </head>
 
-    <body class="h-screen bg-base-200 text-base-content">
+    <body class="min-h-dvh">
 
         <nav class="navbar text-primary drop-shadow-sm mb-4" role="navigation" aria-label="main navigation">
             <div class="navbar-start flex-auto">
@@ -79,6 +79,8 @@
 
         </nav>
 
-        <div id="content" class="container mx-auto">{% block content %}{% endblock %}</div>
-    </div>
+        <main id="content" class="container grow mx-auto mb-4">{% block content %}{% endblock %}</main>
+
+        {% block footer %}{% endblock %}
+    </body>
 </html>
