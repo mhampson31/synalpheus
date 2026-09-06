@@ -16,7 +16,7 @@
         {% block head %}{% endblock %}
     </head>
 
-    <body class="min-h-dvh">
+    <body class="min-h-dvh flex flex-col">
 
         <nav class="navbar text-primary drop-shadow-sm mb-4" role="navigation" aria-label="main navigation">
             <div class="navbar-start flex-auto">
@@ -61,7 +61,7 @@
 
         </nav>
 
-        <main id="content" class="container grow mx-auto mb-4">
+        <main id="content" class="container grow mx-auto">
             {% block content %}{% endblock %}
         </main>
 
