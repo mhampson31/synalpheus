@@ -9,6 +9,7 @@
             <p>Group: {{ app.group }}</p>
             <p>Description: {{ app.description }}</p>
             <p>URL: {{ app.launch_url }}</p>
+
             <div class="card-actions justify-end">
                 <button class="btn bg-primary/50 text-primary-content"
                     aria-label="Edit this application"
@@ -17,6 +18,7 @@
                     hx-trigger="click" _="on click trigger edit">
                     {{ <edit_icon /> }}
                 </button>
+
                 <button class="btn bg-warning/50 text-warning-content"
                    aria-label="Delete this application"
                    title="Delete"
@@ -24,14 +26,36 @@
                    hx-delete="/local-apps/{{app.id}}">
                     {{ <delete_icon /> }}
                 </button>
+
                 <button class="btn bg-info/50 text-info-content"
                     aria-label="Upload an icon for this application"
                     title="Upload Icon"
-                    hx-get="/local-apps/icon-form/{{app.id}}"
+                    onclick="icon_form_{{app.id}}.showModal()">
+                    <!--hx-get="/local-apps/icon-form/{{app.id}}"
                     hx-target="body"
-                    hx-swap="beforeend">
+                    hx-swap="beforeend"-->
                      {{ <upload_icon /> }}
                 </button>
+
+                <dialog id="icon_form_{{app.id}}" class="modal">
+                  <div class="modal-box">
+                    <h3 class="text-lg font-bold">Select Icon</h3>
+
+                    <div class="modal-action">
+                        <form id='icon-form-{{app.id}}'
+                            hx-encoding='multipart/form-data'
+                            hx-post='/local-apps/icon-form/{{app.id}}'>
+
+                            <input class="file-input file-input-accent place-self-start mb-2" type='file' name='file' required>
+                            <button class="btn">
+                                {{ <save_icon /> }}
+                            </button>
+                        </form>
+                    </div>
+
+                  </div>
+                </dialog>
+
             </div>
         </div>
     </div>
