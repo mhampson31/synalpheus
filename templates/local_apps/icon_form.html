@@ -14,11 +14,11 @@
         <footer class="modal-card-foot">
             <div class="buttons">
                 <button class="button is-success" form="icon-form-{{app.id}}">
-                    <span class="icon is-small"><img src="/static/icons/save.svg" /></span>
+                    {{ <save_icon /> }}
                     <span>Save changes</span>
                 </button>
                 <button class="button" _="on click remove .is-active from #icon-form then remove #icon-form">
-                    <span class="icon is-small"><img src="/static/icons/save.svg" /></span>
+                    {{ <cancel_icon /> }}
                     <span>Cancel</span>
                 </button>
             </div>

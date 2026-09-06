@@ -2,25 +2,25 @@
     hx-trigger="iconSaved_{{app.id}} from:body">
     <div class="card card-border bg-base-200 border-neutral text-base-content px-4">
         <div class="card-body">
-            <p>Name: {{app.name}}</p>
-            <p>Slug: {{app.slug}}</p>
-            <p>Icon: {{app.icon}}</p>
-            <p>Group: {{app.group}}</p>
-            <p>Description: {{app.description}}</p>
-            <p>URL: {{app.launch_url}}</p>
+            <p>Name: {{ app.name }}</p>
+            <p>Slug: {{ app.slug }}</p>
+            <p>Icon: {{ app.icon }}</p>
+            <p>Group: {{ app.group }}</p>
+            <p>Description: {{ app.description }}</p>
+            <p>URL: {{ app.launch_url }}</p>
             <div class="card-actions justify-end">
                 <button class="btn bg-primary/50 text-primary-content" hx-get="/local-apps/{{app.id}}/edit" hx-trigger="click" _="on click
             trigger edit">
-                    <img class="block-1/2 fill-primary-content" src="/static/icons/edit.svg">
+                    {{ <edit_icon /> }}
                     <span>Edit</span>
                 </button>
-                <button class="btn bg-warning/50 text-warning-content-content" hx-confirm="Delete this app?" hx-delete="/local-apps/{{app.id}}">
-                    <img class="block-1/2 fill-warning-content" src="/static/icons/delete.svg">
+                <button class="btn bg-warning/50 text-warning-content" hx-confirm="Delete this app?" hx-delete="/local-apps/{{app.id}}">
+                    {{ <delete_icon /> }}
                     <span>Delete</span>
                 </button>
                 <button class="btn bg-info/50 text-info-content" hx-get="/local-apps/icon-form/{{app.id}}" hx-target="body"
                     hx-swap="beforeend">
-                    <img class="block-1/2 fill-info-content" src="/static/icons/upload.svg">
+                    {{ <upload_icon /> }}
                     <span>Icon</span>
                 </button>
             </div>
