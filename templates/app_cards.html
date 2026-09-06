@@ -9,10 +9,12 @@
         {% endif %}
 
         <div class="card-title">
-            <img class="size-16 rounded-box"
-                    {% if app.icon %} src="{{app.icon}}"
-                    {% else %} src="/static/icons/shrimp.svg"
-                    {% endif %} alt="The {{app.name}} icon" />
+            <figure class="size-16 rounded-box">
+                {% if app.icon %}
+                <img src="{{app.icon}}" alt="The {{app.name}} icon" />
+                {% else %} {{ <shrimp />}}
+                {% endif %}
+            </figure>
 
             <h2 >{{ app.name }}</h2>
         </div>

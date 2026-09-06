@@ -2143,6 +2143,9 @@
   .fill-accent-content {
     fill: var(--color-accent-content);
   }
+  .fill-info {
+    fill: var(--color-info);
+  }
   .fill-info-content {
     fill: var(--color-info-content);
   }
