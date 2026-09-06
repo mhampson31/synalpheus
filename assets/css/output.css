@@ -2045,6 +2045,9 @@
   .w-5 {
     width: calc(var(--spacing) * 5);
   }
+  .w-24 {
+    width: calc(var(--spacing) * 24);
+  }
   .flex-auto {
     flex: auto;
   }
@@ -2069,8 +2072,8 @@
   .justify-end {
     justify-content: flex-end;
   }
-  .place-self-end {
-    place-self: end;
+  .self-end {
+    align-self: flex-end;
   }
   @layer daisyui.l1.l2 {
     .menu-sm :where(li:not(.menu-title) > :not(ul, menu, details, .menu-title)) {
@@ -2140,23 +2143,11 @@
       --btn-shadow: 0 0 0 0 oklch(0% 0 0/0);
     }
   }
-  .fill-accent-content {
-    fill: var(--color-accent-content);
-  }
   .fill-info {
     fill: var(--color-info);
   }
-  .fill-info-content {
-    fill: var(--color-info-content);
-  }
   .fill-primary {
     fill: var(--color-primary);
-  }
-  .fill-primary-content {
-    fill: var(--color-primary-content);
-  }
-  .fill-warning-content {
-    fill: var(--color-warning-content);
   }
   .p-2 {
     padding: calc(var(--spacing) * 2);
@@ -2210,9 +2201,6 @@
       --top-mul: 4;
       --font-size: 0.75rem;
     }
-  }
-  .block-1\/2 {
-    block-size: calc(1 / 2 * 100%);
   }
   @layer daisyui.l1.l2.l3 {
     .aura:has( > .btn,  > .input,  > .select) {

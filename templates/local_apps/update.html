@@ -36,14 +36,20 @@
 
                 <div class="card-actions justify-end">
                     <input name="source" type="hidden" value="Local" />
-                    <button class="btn bg-warning/50 text-warning-content" hx-trigger="click" hx-get="/local-apps/{{app.id}}">
-                        {{ <cancel_icon /> }}
-                        <span>Cancel</span>
+                    <button class="btn bg-warning/50 text-warning-content"
+                        aria-label="Cancel this change"
+                        title="Cancel"
+                        hx-trigger="click"
+                        hx-get="/local-apps/{{app.id}}">
+                         {{ <cancel_icon /> }}
                     </button>
-                    <button class="btn bg-primary/50 text-primary-content" hx-trigger="click" hx-put="/local-apps/{{app.id}}"
+                    <button class="btn bg-primary/50 text-primary-content"
+                        aria-label="Save this change"
+                        title="Save"
+                        hx-trigger="click"
+                        hx-put="/local-apps/{{app.id}}"
                         hx-include="#update-{{app.id}}">
                         {{ <save_icon /> }}
-                        <span>Save</span>
                     </button>
                 </div>
             </form>
