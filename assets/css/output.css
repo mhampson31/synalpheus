@@ -2143,6 +2143,9 @@
       --btn-shadow: 0 0 0 0 oklch(0% 0 0/0);
     }
   }
+  .fill-current {
+    fill: currentcolor;
+  }
   .fill-info {
     fill: var(--color-info);
   }
