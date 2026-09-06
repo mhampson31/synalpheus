@@ -1975,6 +1975,9 @@
       }
     }
   }
+  .z-40 {
+    z-index: 40;
+  }
   @layer daisyui.l1.l2.l3 {
     .modal-box {
       grid-column-start: 1;
@@ -2222,6 +2225,9 @@
       display: none;
     }
   }
+  .mt-2 {
+    margin-top: calc(var(--spacing) * 2);
+  }
   .mr-2 {
     margin-right: calc(var(--spacing) * 2);
   }
@@ -2333,6 +2339,9 @@
   .w-24 {
     width: calc(var(--spacing) * 24);
   }
+  .w-40 {
+    width: calc(var(--spacing) * 40);
+  }
   .w-full {
     width: 100%;
   }
@@ -2372,6 +2381,9 @@
   .self-end {
     align-self: flex-end;
   }
+  .overflow-visible {
+    overflow: visible;
+  }
   @layer daisyui.l1.l2 {
     .menu-sm :where(li:not(.menu-title) > :not(ul, menu, details, .menu-title)) {
       border-radius: var(--radius-field);
@@ -2395,6 +2407,9 @@
   }
   .rounded-box {
     border-radius: var(--radius-box);
+  }
+  .rounded-field {
+    border-radius: var(--radius-field);
   }
   .rounded-t-box {
     border-top-left-radius: var(--radius-box);

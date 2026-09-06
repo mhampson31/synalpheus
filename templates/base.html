@@ -18,17 +18,17 @@
 
     <body class="min-h-dvh flex flex-col">
 
-        <nav class="navbar text-primary drop-shadow-sm mb-4" role="navigation" aria-label="main navigation">
+        <nav class="navbar text-primary drop-shadow-sm mb-4 overflow-visible z-40" role="navigation" aria-label="main navigation">
             <div class="navbar-start flex-auto">
                     <a class="btn btn-ghost text-primary text-xl" href="/">{{ <logo /> }}{{ title }}</a>
             </div>
 
             <div class="navbar-end">
                 <div class="dropdown dropdown-end md:hidden">
-                    <div tabindex="0">
-                        <svg aria-label="Menu" class="h-5 w-5" fill="" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /> </svg>
+                    <div tabindex="0" role="button" class="btn btn-ghost rounded-field">
+                        <svg aria-label="Menu" class="h-5 w-5" fill="text-primary" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /> </svg>
                     </div>
-                    <ul tabindex="-1" class="menu menu-sm dropdown-content bg-base-200 rounded-t-box">
+                    <ul tabindex="-1" class="menu menu-sm dropdown-content bg-base-200 w-40 rounded-t-box mt-2">
                         {% if user %}
                             {% if user.is_superuser %}<li><a href="/admin">Admin</a></li>{% endif %}
                             <li><span>{{user.name}}</span></li>
@@ -38,6 +38,9 @@
                             {% if user %}<a class="button" href="/logout">Logout</a>
                             {% else %}<a class="button" href="/login">Login</a>
                             {% endif %}
+                        </li>
+                        <li>
+                            <span>Long string test for menu items</span>
                         </li>
                     </ul>
                 </div>
@@ -61,7 +64,7 @@
 
         </nav>
 
-        <main id="content" class="container grow mx-auto">
+        <main id="content" class="grow mx-auto">
             {% block content %}{% endblock %}
         </main>
 
