@@ -11,11 +11,9 @@
     {% if user %}
     <div hx-get="/app-cards" hx-trigger="load,newCard from:body">
     </div>
+    {% else %}
+    Not logged in
+    {% endif %}
 </div>
-
-
-{% else %}
-Not logged in
-{% endif %}
 
 {% endblock %}
