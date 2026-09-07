@@ -27,17 +27,18 @@
                     {{ <delete_icon /> }}
                 </button>
 
+                {% set icon_form = "icon_form_" ~ app.id %}
                 <button class="btn bg-info/50 text-info-content"
                     aria-label="Upload an icon for this application"
                     title="Upload Icon"
-                    onclick="icon_form_{{app.id}}.showModal()">
+                    onclick="{{ icon_form }}.showModal()">
                     <!--hx-get="/local-apps/icon-form/{{app.id}}"
                     hx-target="body"
                     hx-swap="beforeend"-->
                      {{ <upload_icon /> }}
                 </button>
 
-                <dialog id="icon_form_{{app.id}}" class="modal">
+                <dialog id="{{ icon_form }}" class="modal">
                   <div class="modal-box">
                     <h3 class="text-lg font-bold">Select Icon</h3>
 
