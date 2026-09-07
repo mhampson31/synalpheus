@@ -1,0 +1,31 @@
+{% component appcard(app) %}
+<div class="card p-2">
+    {% if app.launch_url %}
+    <a href="{{ app.launch_url }}">
+    {% endif %}
+
+    <div class="card-title">
+        <figure class="size-16 rounded-box">
+            {% if app.icon %}
+            <img src="{{app.icon}}" alt="The {{app.name}} icon" />
+            {% else %} {{ <shrimp />}}
+            {% endif %}
+        </figure>
+
+        <h2 >{{ app.name }}</h2>
+    </div>
+
+    <div class="card-body p-2">
+        {% if app.group %}
+        <div class="card-actions items-end">
+            <p class="italic">{{ app.group }}</p>
+        </div>
+        {% endif %}
+        <p class="card-text">{{app.description}}</p>
+    </div>
+
+    {% if app.launch_url %}
+    </a>
+    {% endif %}
+</div>
+{% endcomponent appcard %}
