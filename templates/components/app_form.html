@@ -1,0 +1,69 @@
+{% component app_form(app) %}
+<div class="card card-border bg-base-200 border-neutral text-base-content px-4">
+    <div class="card-body">
+        <form id="{{ 'update-' ~ app.id if app else 'new-app' }}">
+            <fieldset class="fieldset mb-2">
+                <label class="input">
+                    <span class="label">Name</span>
+                    <input name='name' class="input" value='{{ app.name if app else none }}'>
+                </label>
+
+                <label class="input">
+                    <span class="label">Slug</span>
+                    <input name='slug' class="input" value='{{ app.slug if app else none }}'>
+                </label>
+
+                <label class="input">
+                    <span class="label">Icon</span>
+                    <input name='icon' class="input" value='{{ app.icon if app else none }}' readonly>
+                </label>
+
+                <label class="input">
+                    <span class="label">Group</span>
+                    <input name='group' class="input" value='{{ app.group if app else none }}'>
+                </label>
+
+                <label>
+                    <span class="label">Description</span>
+                    <textarea name='description' class="textarea">{{ app.description if app else none }}</textarea>
+                </label>
+
+                <label class="input">
+                    <span class="label">URL</span>
+                    <input name='launch_url' class="input" value='{{ app.launch_url if app else none }}'>
+                </label>
+            </fieldset>
+
+            <div class="card-actions justify-end">
+                <input name="source" type="hidden" value="Local" />
+
+                <button class="btn btn-outline btn-warning text-warning"
+                    {% if app %}
+                        hx-trigger="click"
+                        hx-get="/local-apps/{{app.id}}"
+                    {% else %}
+                        _="on click send newApp to #local-apps"
+                    {% endif %}
+                    aria-label="Cancel this change"
+                    title="Cancel">
+                     {{ <cancel_icon /> }}
+                </button>
+
+                <button class="btn btn-outline btn-primary text-primary"
+                    {% if app %}
+                        hx-trigger="click"
+                        hx-put="/local-apps/{{app.id}}"
+                        hx-include="#update-{{app.id}}"
+                    {% else %}
+                        hx-post="/local-apps"
+                        hx-include="closest section"
+                    {% endif %}
+                    aria-label="Save this change"
+                    title="Save">
+                    {{ <save_icon /> }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endcomponent app_form %}

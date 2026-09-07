@@ -11,7 +11,7 @@
             <p>URL: {{ app.launch_url }}</p>
 
             <div class="card-actions justify-end">
-                <button class="btn bg-primary/50 text-primary-content"
+                <button class="btn btn-outline btn-primary text-primary"
                     aria-label="Edit this application"
                     title="Edit"
                     hx-get="/local-apps/{{app.id}}/edit"
@@ -19,16 +19,8 @@
                     {{ <edit_icon /> }}
                 </button>
 
-                <button class="btn bg-warning/50 text-warning-content"
-                   aria-label="Delete this application"
-                   title="Delete"
-                   hx-confirm="Delete this application?"
-                   hx-delete="/local-apps/{{app.id}}">
-                    {{ <delete_icon /> }}
-                </button>
-
                 {% set icon_form = "icon_form_" ~ app.id %}
-                <button class="btn bg-info/50 text-info-content"
+                <button class="btn btn-outline btn-info text-info"
                     aria-label="Upload an icon for this application"
                     title="Upload Icon"
                     onclick="{{ icon_form }}.showModal()">
@@ -36,6 +28,14 @@
                     hx-target="body"
                     hx-swap="beforeend"-->
                      {{ <upload_icon /> }}
+                </button>
+
+                <button class="btn btn-outline btn-error text-error"
+                   aria-label="Delete this application"
+                   title="Delete"
+                   hx-confirm="Delete this application?"
+                   hx-delete="/local-apps/{{app.id}}">
+                    {{ <delete_icon /> }}
                 </button>
 
                 <dialog id="{{ icon_form }}" class="modal">
