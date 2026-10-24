@@ -1,5 +1,5 @@
 # Rust as the base image
-FROM rust:1-slim-bullseye AS build
+FROM rust:1-slim-trixie AS build
 
 # Create a new empty shell project
 RUN USER=root cargo new --bin synalpheus
@@ -31,7 +31,7 @@ RUN rm ./target/release/deps/synalpheus*
 RUN cargo build --release
 
 # The final base image
-FROM debian:bullseye-slim
+FROM debian:trixie-slim
 
 # Copy from the previous build
 COPY --from=build /synalpheus/target/release/synalpheus /synalpheus/synalpheus
@@ -41,10 +41,6 @@ COPY --from=build /synalpheus/templates /synalpheus/templates
 COPY --from=build /synalpheus/assets /synalpheus/assets
 
 ENV RUST_LOG=error,poem=debug,synalpheus=trace
-
-RUN apt-get update \
-    && apt-get install --no-install-recommends -y ca-certificates libssl-dev pkg-config curl \
-    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /synalpheus
 # Run the binary
