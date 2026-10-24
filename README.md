@@ -42,7 +42,11 @@ Setup:
       - 8080:80
     volumes:
       # Synalpheus will use this to store images files for any non-Authentik applications
-      - /opt/appdata/synalpheus:/synalpheus/media
+      - /opt/appdata/synalpheus/media:/synalpheus/media
+      # This is your configuration file
+      - /opt/appdata/synalpheus/config.toml:/synalpheus/config.toml
+      # Use your Docker host's certificate store, so you don't have to rely on me for updates
+      - /etc/ssl/certs:/etc/ssl/certs:ro      
     environment:
       PUID: ${PUID}
       PGUID: ${PGID}
