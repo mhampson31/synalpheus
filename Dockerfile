@@ -43,9 +43,9 @@ COPY --from=build /synalpheus/assets /synalpheus/assets
 
 ENV RUST_LOG=error,poem=debug,synalpheus=trace
 
-RUN apt-get update \
-    && apt-get install --no-install-recommends -y ca-certificates libssl-dev pkg-config curl \
-    && rm -rf /var/lib/apt/lists/*
+#RUN apt-get update \
+    #&& apt-get install --no-install-recommends -y ca-certificates libssl-dev pkg-config curl \
+#    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /synalpheus
 # Run the binary
